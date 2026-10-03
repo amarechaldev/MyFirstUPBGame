@@ -21,8 +21,6 @@ public enum Evento {
     PERDER_JUEGO,
     /** Muestra un mensaje. Necesita un texto. */
     MOSTRAR_MENSAJE,
-    /** Reproduce un sonido. Necesita el nombre del sonido. */
-    REPRODUCIR_SONIDO,
     /** Lleva al jugador a otra casilla. Necesita la casilla de destino. */
     TELETRANSPORTAR
 }

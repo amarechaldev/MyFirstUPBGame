@@ -1,5 +1,6 @@
 package base;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import edu.upb.lp.game.core.GameController;
@@ -17,7 +18,7 @@ import juego.Terreno;
 /**
  * Base de un juego de exploracion de calabozos.
  *
- * El calabozo es una cuadricula de 16x16. El jugador empieza siempre en la
+ * El calabozo es una cuadricula de 20x20. El jugador empieza siempre en la
  * casilla (1,1) y se mueve una casilla a la vez con las flechas del teclado o
  * con W, A, S, D. No puede atravesar paredes. Solo ve las 9 casillas que
  * lo rodean (niebla de guerra).
@@ -36,13 +37,20 @@ public abstract class MyFirstUPBGameBase implements GameController {
     // Constantes
     // ------------------------------------------------------------------
 
-    protected static final int FILAS = 16;
-    protected static final int COLUMNAS = 16;
+    protected static final int FILAS = 20;
+    protected static final int COLUMNAS = 20;
     protected static final int FILA_INICIAL = 1;
     protected static final int COLUMNA_INICIAL = 1;
     protected static final int VIDAS_INICIALES = 3;
 
+    /** Tamano de la ventana: cabe en pantallas antiguas de 1024x768. */
+    private static final int ANCHO_VENTANA = 1024;
+    private static final int ALTO_VENTANA = 768;
+
     private static final String BTN_REINICIAR = "Reiniciar";
+
+    private static final String ETIQUETA_VIDAS = "Vidas";
+    private static final String ETIQUETA_MONEDAS = "Monedas";
 
     /** Imagen de las casillas que el jugador todavia no ha visto. */
     private static final String IMAGEN_OSCURIDAD = "dark";
@@ -94,7 +102,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
     // ------------------------------------------------------------------
 
     /**
-     * Crea el terreno del calabozo: una matriz de 16x16.
+     * Crea el terreno del calabozo: una matriz de 20x20.
      * La casilla (1,1) no puede ser PARED.
      */
     protected abstract Terreno[][] crearMapa();
@@ -114,7 +122,8 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     /** Coloca un elemento en la casilla (v, h). Los elementos nunca se mueven. */
     protected void anadirElemento(int v, int h, Elemento elemento) {
-        // TODO
+        validarCasilla(v, h);
+        elementos[v][h] = elemento;
     }
 
     /**
@@ -122,7 +131,12 @@ public abstract class MyFirstUPBGameBase implements GameController {
      * GANAR_VIDA, PERDER_VIDA, GANAR_JUEGO o PERDER_JUEGO.
      */
     protected void anadirEvento(int v, int h, Evento evento) {
-        // TODO
+        if (evento != Evento.GANAR_VIDA && evento != Evento.PERDER_VIDA
+                && evento != Evento.GANAR_JUEGO && evento != Evento.PERDER_JUEGO) {
+            throw new IllegalArgumentException("El evento " + evento + " necesita datos adicionales");
+        }
+        registrarEvento(v, h, evento);
+        vidasActivas = vidasActivas || evento == Evento.GANAR_VIDA || evento == Evento.PERDER_VIDA;
     }
 
     /**
@@ -130,15 +144,22 @@ public abstract class MyFirstUPBGameBase implements GameController {
      * GANAR_MONEDAS o PERDER_MONEDAS.
      */
     protected void anadirEvento(int v, int h, Evento evento, int cantidad) {
-        // TODO
+        if (evento != Evento.GANAR_MONEDAS && evento != Evento.PERDER_MONEDAS) {
+            throw new IllegalArgumentException("El evento " + evento + " no usa una cantidad");
+        }
+        registrarEvento(v, h, evento).cantidad = cantidad;
+        monedasActivas = true;
     }
 
     /**
      * Asocia un evento con un texto a la casilla (v, h):
-     * MOSTRAR_MENSAJE (el mensaje) o REPRODUCIR_SONIDO (el nombre del sonido).
+     * MOSTRAR_MENSAJE (el mensaje).
      */
     protected void anadirEvento(int v, int h, Evento evento, String texto) {
-        // TODO
+        if (evento != Evento.MOSTRAR_MENSAJE) {
+            throw new IllegalArgumentException("El evento " + evento + " no usa un texto");
+        }
+        registrarEvento(v, h, evento).texto = texto;
     }
 
     /**
@@ -146,7 +167,33 @@ public abstract class MyFirstUPBGameBase implements GameController {
      * El destino (vDestino, hDestino) no puede ser PARED.
      */
     protected void anadirEvento(int v, int h, Evento evento, int vDestino, int hDestino) {
-        // TODO
+        if (evento != Evento.TELETRANSPORTAR) {
+            throw new IllegalArgumentException("El evento " + evento + " no usa una casilla de destino");
+        }
+        validarCasilla(vDestino, hDestino);
+        if (mapa[vDestino][hDestino] == Terreno.PARED) {
+            throw new IllegalArgumentException(
+                    "El destino (" + vDestino + "," + hDestino + ") no puede ser PARED");
+        }
+        EventoEnCasilla nuevo = registrarEvento(v, h, evento);
+        nuevo.vDestino = vDestino;
+        nuevo.hDestino = hDestino;
+    }
+
+    private EventoEnCasilla registrarEvento(int v, int h, Evento evento) {
+        validarCasilla(v, h);
+        EventoEnCasilla nuevo = new EventoEnCasilla();
+        nuevo.v = v;
+        nuevo.h = h;
+        nuevo.evento = evento;
+        eventos.add(nuevo);
+        return nuevo;
+    }
+
+    private void validarCasilla(int v, int h) {
+        if (!estaDentro(v, h)) {
+            throw new IllegalArgumentException("La casilla (" + v + "," + h + ") esta fuera del calabozo");
+        }
     }
 
     // ------------------------------------------------------------------
@@ -166,37 +213,22 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     @Override
     public void initialiseInterface() {
-       
-
-        graficos.configureGrid(FILAS, COLUMNAS);
+        graficos.configureGrid(FILAS, COLUMNAS, ANCHO_VENTANA, ALTO_VENTANA, false);
         graficos.addButton(BTN_REINICIAR);
 
-        mapa = crearMapa();
-        filaJugador = FILA_INICIAL;
-        columnaJugador = COLUMNA_INICIAL;
-
-        // Dibuja el terreno de todo el calabozo
-        for (int v = 0; v < FILAS; v++) {
-            for (int h = 0; h < COLUMNAS; h++) {
-                graficos.setCellBackgroundImage(v, h, mapa[v][h].getImagen());
-            }
-        }
-
-        // Dibuja al jugador en su casilla inicial
-        Personaje personaje = getPersonaje();
-        if (personaje != null) {
-            graficos.setCellObjectImage(filaJugador, columnaJugador, personaje.getImagen());
-        }
+        iniciarJuego();
     }
 
     @Override
     public void onButtonPressed(String name) {
-        // TODO
+        if (BTN_REINICIAR.equals(name)) {
+            reiniciarJuego();
+        }
     }
 
+    /** El juego se controla solo con el teclado. */
     @Override
     public void onCellPressed(int row, int col) {
-        // TODO
     }
 
     /** Mueve al jugador con las flechas o con W, A, S, D. */
@@ -230,12 +262,41 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     /** Prepara el mapa, el mundo, el jugador y el estado inicial. */
     private void iniciarJuego() {
-        // TODO
+        mapa = crearMapa();
+        if (mapa == null || mapa.length != FILAS) {
+            throw new IllegalStateException("El mapa debe tener " + FILAS + " filas");
+        }
+        for (Terreno[] fila : mapa) {
+            if (fila == null || fila.length != COLUMNAS) {
+                throw new IllegalStateException("Cada fila del mapa debe tener " + COLUMNAS + " columnas");
+            }
+        }
+        if (mapa[FILA_INICIAL][COLUMNA_INICIAL] == Terreno.PARED) {
+            throw new IllegalStateException(
+                    "La casilla inicial (" + FILA_INICIAL + "," + COLUMNA_INICIAL + ") no puede ser PARED");
+        }
+
+        elementos = new Elemento[FILAS][COLUMNAS];
+        eventos = new ArrayList<>();
+        revelado = new boolean[FILAS][COLUMNAS];
+
+        vidas = VIDAS_INICIALES;
+        vidasActivas = false;
+        monedas = 0;
+        monedasActivas = false;
+        juegoTerminado = false;
+
+        construirMundo();
+
+        filaJugador = FILA_INICIAL;
+        columnaJugador = COLUMNA_INICIAL;
+        revelarAlrededor();
+        actualizarInterfaz();
     }
 
     /** Vuelve a empezar el juego desde cero. */
     private void reiniciarJuego() {
-        // TODO
+        iniciarJuego();
     }
 
     // ------------------------------------------------------------------
@@ -243,52 +304,122 @@ public abstract class MyFirstUPBGameBase implements GameController {
     // ------------------------------------------------------------------
 
     private void moverArriba() {
-        // TODO
+        int v = filaJugador - 1;
+        if (juegoTerminado || !estaDentro(v, columnaJugador) || mapa[v][columnaJugador] == Terreno.PARED) {
+            return;
+        }
+        filaJugador = v;
+        revelarAlrededor();
+        actualizarInterfaz();
+        ejecutarEventos(filaJugador, columnaJugador);
     }
 
     private void moverAbajo() {
-        // TODO
+        int v = filaJugador + 1;
+        if (juegoTerminado || !estaDentro(v, columnaJugador) || mapa[v][columnaJugador] == Terreno.PARED) {
+            return;
+        }
+        filaJugador = v;
+        revelarAlrededor();
+        actualizarInterfaz();
+        ejecutarEventos(filaJugador, columnaJugador);
     }
 
     private void moverIzquierda() {
-        // TODO
+        int h = columnaJugador - 1;
+        if (juegoTerminado || !estaDentro(filaJugador, h) || mapa[filaJugador][h] == Terreno.PARED) {
+            return;
+        }
+        columnaJugador = h;
+        revelarAlrededor();
+        actualizarInterfaz();
+        ejecutarEventos(filaJugador, columnaJugador);
     }
 
     private void moverDerecha() {
-        // TODO
-    }
-
-    /**
-     * Mueve al jugador a la casilla (v, h) si esta dentro del calabozo, no es
-     * PARED y esta a un solo paso del jugador.
-     */
-    private void intentarMoverA(int v, int h) {
-        // TODO
+        int h = columnaJugador + 1;
+        if (juegoTerminado || !estaDentro(filaJugador, h) || mapa[filaJugador][h] == Terreno.PARED) {
+            return;
+        }
+        columnaJugador = h;
+        revelarAlrededor();
+        actualizarInterfaz();
+        ejecutarEventos(filaJugador, columnaJugador);
     }
 
     // ------------------------------------------------------------------
     // Eventos
     // ------------------------------------------------------------------
 
-    /** Ejecuta, en orden, todos los eventos asociados a la casilla (v, h). */
+    /**
+     * Ejecuta, en orden, todos los eventos asociados a la casilla (v, h).
+     * Se detiene si el juego termina. Teletransportar no ejecuta los eventos
+     * de la casilla de destino.
+     */
     private void ejecutarEventos(int v, int h) {
-        // TODO
+        for (EventoEnCasilla e : new ArrayList<>(eventos)) {
+            if (juegoTerminado) {
+                return;
+            }
+            if (e.v != v || e.h != h) {
+                continue;
+            }
+            switch (e.evento) {
+                case GANAR_VIDA:
+                    ganarVida();
+                    break;
+                case PERDER_VIDA:
+                    perderVida();
+                    break;
+                case GANAR_MONEDAS:
+                    ganarMonedas(e.cantidad);
+                    break;
+                case PERDER_MONEDAS:
+                    perderMonedas(e.cantidad);
+                    break;
+                case GANAR_JUEGO:
+                    mostrarPantallaVictoria();
+                    break;
+                case PERDER_JUEGO:
+                    mostrarPantallaDerrota();
+                    break;
+                case MOSTRAR_MENSAJE:
+                    mensajes.showMessage(e.texto);
+                    break;
+                case TELETRANSPORTAR:
+                    filaJugador = e.vDestino;
+                    columnaJugador = e.hDestino;
+                    revelarAlrededor();
+                    actualizarInterfaz();
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
     private void ganarVida() {
-        // TODO
+        vidas++;
+        actualizarEtiquetas();
     }
 
     private void perderVida() {
-        // TODO
+        vidas--;
+        actualizarEtiquetas();
+        if (vidas <= 0) {
+            mostrarPantallaDerrota();
+        }
     }
 
     private void ganarMonedas(int cantidad) {
-        // TODO
+        monedas += cantidad;
+        actualizarEtiquetas();
     }
 
+    /** Las monedas nunca bajan de 0. */
     private void perderMonedas(int cantidad) {
-        // TODO
+        monedas = Math.max(0, monedas - cantidad);
+        actualizarEtiquetas();
     }
 
     // ------------------------------------------------------------------
@@ -296,11 +427,17 @@ public abstract class MyFirstUPBGameBase implements GameController {
     // ------------------------------------------------------------------
 
     private void mostrarPantallaVictoria() {
-        // TODO
+        juegoTerminado = true;
+        String texto = "Ganaste!";
+        if (monedasActivas) {
+            texto += " Terminaste con " + monedas + " monedas.";
+        }
+        mensajes.showMessage(texto + " Presiona " + BTN_REINICIAR + " para jugar otra vez.");
     }
 
     private void mostrarPantallaDerrota() {
-        // TODO
+        juegoTerminado = true;
+        mensajes.showMessage("Perdiste! Presiona " + BTN_REINICIAR + " para intentarlo otra vez.");
     }
 
     // ------------------------------------------------------------------
@@ -309,22 +446,37 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     /** Marca como reveladas las 9 casillas alrededor del jugador. */
     private void revelarAlrededor() {
-        // TODO
+        for (int v = filaJugador - 1; v <= filaJugador + 1; v++) {
+            for (int h = columnaJugador - 1; h <= columnaJugador + 1; h++) {
+                if (estaDentro(v, h)) {
+                    revelado[v][h] = true;
+                }
+            }
+        }
     }
 
     /** Indica si la casilla (v, h) esta entre las 9 casillas alrededor del jugador. */
     private boolean esVisible(int v, int h) {
-        // TODO
-        return false;
+        return Math.abs(v - filaJugador) <= 1 && Math.abs(h - columnaJugador) <= 1;
     }
 
     private void actualizarInterfaz() {
-        // TODO
+        for (int v = 0; v < FILAS; v++) {
+            for (int h = 0; h < COLUMNAS; h++) {
+                dibujarCasilla(v, h);
+            }
+        }
+        actualizarEtiquetas();
     }
 
     /** Actualiza las etiquetas de vidas y monedas, solo si estan activas. */
     private void actualizarEtiquetas() {
-        // TODO
+        if (vidasActivas) {
+            graficos.setLabel(ETIQUETA_VIDAS, String.valueOf(vidas));
+        }
+        if (monedasActivas) {
+            graficos.setLabel(ETIQUETA_MONEDAS, String.valueOf(monedas));
+        }
     }
 
     /**
@@ -332,11 +484,26 @@ public abstract class MyFirstUPBGameBase implements GameController {
      * fue vista pero esta lejos, o terreno, elemento y jugador si esta a la vista.
      */
     private void dibujarCasilla(int v, int h) {
-        // TODO
+        if (!revelado[v][h]) {
+            graficos.setCellBackgroundImage(v, h, IMAGEN_OSCURIDAD);
+            graficos.clearCellObjectImage(v, h);
+        } else if (!esVisible(v, h)) {
+            graficos.setCellBackgroundImage(v, h, mapa[v][h].getImagenTenue());
+            graficos.clearCellObjectImage(v, h);
+        } else {
+            graficos.setCellBackgroundImage(v, h, mapa[v][h].getImagen());
+            Personaje personaje = getPersonaje();
+            if (v == filaJugador && h == columnaJugador && personaje != null) {
+                graficos.setCellObjectImage(v, h, personaje.getImagen());
+            } else if (elementos[v][h] != null) {
+                graficos.setCellObjectImage(v, h, elementos[v][h].getImagen());
+            } else {
+                graficos.clearCellObjectImage(v, h);
+            }
+        }
     }
 
     private boolean estaDentro(int v, int h) {
-        // TODO
-        return false;
+        return v >= 0 && v < FILAS && h >= 0 && h < COLUMNAS;
     }
 }
