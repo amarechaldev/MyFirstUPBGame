@@ -1,0 +1,18 @@
+# Compiled Java Class Files & Directories
+*.class
+bin/
+target/
+build/
+
+# Eclipse IDE Specific Metadata
+.project
+.settings/
+
+# VS Code / IntelliJ Metadata
+.vscode/
+.idea/
+*.iml
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
