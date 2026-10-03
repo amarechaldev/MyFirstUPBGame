@@ -24,7 +24,9 @@ import juego.Terreno;
  * lo rodean (niebla de guerra).
  *
  * Las vidas (3 al empezar) y las monedas solo se activan si el mundo usa
- * eventos de vidas o de monedas.
+ * eventos de vidas o de monedas. La salud (100 al empezar) solo se activa si
+ * el mundo usa eventos de salud; si llega a 0 se pierde una vida y la salud
+ * vuelve a 100.
  *
  * Las clases hijas definen el mapa, el personaje y los elementos y eventos
  * del mundo.
@@ -42,6 +44,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
     protected static final int FILA_INICIAL = 1;
     protected static final int COLUMNA_INICIAL = 1;
     protected static final int VIDAS_INICIALES = 3;
+    protected static final int SALUD_MAXIMA = 100;
 
     /** Tamano de la ventana: cabe en pantallas antiguas de 1024x768. */
     private static final int ANCHO_VENTANA = 1024;
@@ -51,6 +54,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     private static final String ETIQUETA_VIDAS = "Vidas";
     private static final String ETIQUETA_MONEDAS = "Monedas";
+    private static final String ETIQUETA_SALUD = "Salud";
 
     /** Imagen de las casillas que el jugador todavia no ha visto. */
     private static final String IMAGEN_OSCURIDAD = "dark";
@@ -79,6 +83,9 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     private int vidas;
     private boolean vidasActivas;
+
+    private int salud;
+    private boolean saludActiva;
 
     private int monedas;
     private boolean monedasActivas;
@@ -141,14 +148,19 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     /**
      * Asocia un evento con una cantidad a la casilla (v, h):
-     * GANAR_MONEDAS o PERDER_MONEDAS.
+     * GANAR_MONEDAS, PERDER_MONEDAS, GANAR_SALUD o PERDER_SALUD.
      */
     protected void anadirEvento(int v, int h, Evento evento, int cantidad) {
-        if (evento != Evento.GANAR_MONEDAS && evento != Evento.PERDER_MONEDAS) {
+        boolean esMonedas = evento == Evento.GANAR_MONEDAS || evento == Evento.PERDER_MONEDAS;
+        boolean esSalud = evento == Evento.GANAR_SALUD || evento == Evento.PERDER_SALUD;
+        if (!esMonedas && !esSalud) {
             throw new IllegalArgumentException("El evento " + evento + " no usa una cantidad");
         }
         registrarEvento(v, h, evento).cantidad = cantidad;
-        monedasActivas = true;
+        monedasActivas = monedasActivas || esMonedas;
+        // La salud puede quitar vidas, asi que tambien activa las vidas.
+        saludActiva = saludActiva || esSalud;
+        vidasActivas = vidasActivas || esSalud;
     }
 
     /**
@@ -282,6 +294,8 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
         vidas = VIDAS_INICIALES;
         vidasActivas = false;
+        salud = SALUD_MAXIMA;
+        saludActiva = false;
         monedas = 0;
         monedasActivas = false;
         juegoTerminado = false;
@@ -377,6 +391,12 @@ public abstract class MyFirstUPBGameBase implements GameController {
                 case PERDER_MONEDAS:
                     perderMonedas(e.cantidad);
                     break;
+                case GANAR_SALUD:
+                    ganarSalud(e.cantidad);
+                    break;
+                case PERDER_SALUD:
+                    perderSalud(e.cantidad);
+                    break;
                 case GANAR_JUEGO:
                     mostrarPantallaVictoria();
                     break;
@@ -408,6 +428,26 @@ public abstract class MyFirstUPBGameBase implements GameController {
         actualizarEtiquetas();
         if (vidas <= 0) {
             mostrarPantallaDerrota();
+        }
+    }
+
+    /** La salud nunca sube de SALUD_MAXIMA. */
+    private void ganarSalud(int cantidad) {
+        salud = Math.min(SALUD_MAXIMA, salud + cantidad);
+        actualizarEtiquetas();
+    }
+
+    /**
+     * Si la salud llega a 0 se pierde una vida y la salud vuelve a
+     * SALUD_MAXIMA. El dano sobrante se descarta.
+     */
+    private void perderSalud(int cantidad) {
+        salud -= cantidad;
+        if (salud <= 0) {
+            salud = SALUD_MAXIMA;
+            perderVida();
+        } else {
+            actualizarEtiquetas();
         }
     }
 
@@ -469,13 +509,16 @@ public abstract class MyFirstUPBGameBase implements GameController {
         actualizarEtiquetas();
     }
 
-    /** Actualiza las etiquetas de vidas y monedas, solo si estan activas. */
+    /** Actualiza las etiquetas de vidas, salud y monedas, solo si estan activas. */
     private void actualizarEtiquetas() {
         if (vidasActivas) {
-            graficos.setLabel(ETIQUETA_VIDAS, String.valueOf(vidas));
+            graficos.setLabel(ETIQUETA_VIDAS, ETIQUETA_VIDAS + ": " + vidas);
+        }
+        if (saludActiva) {
+            graficos.setLabel(ETIQUETA_SALUD, ETIQUETA_SALUD + ": " + salud);
         }
         if (monedasActivas) {
-            graficos.setLabel(ETIQUETA_MONEDAS, String.valueOf(monedas));
+            graficos.setLabel(ETIQUETA_MONEDAS, ETIQUETA_MONEDAS + ": " + monedas);
         }
     }
 

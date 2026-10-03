@@ -46,12 +46,18 @@ public class MyFirstUPBGame extends MyFirstUPBGameBase {
         // TODO (estudiante): coloca elementos y eventos en las casillas.
         //
         // Ejemplos:
-        // anadirElemento(3, 5, Elemento.COFRE);
-        // anadirEvento(3, 5, Evento.GANAR_MONEDAS, 10);
+        anadirElemento(3, 5, Elemento.ARANA);
+        anadirEvento(3, 5, Evento.PERDER_SALUD, 30);
         //
         // anadirElemento(7, 2, Elemento.ARANA);
         // anadirEvento(7, 2, Evento.PERDER_VIDA);
         // anadirEvento(7, 2, Evento.MOSTRAR_MENSAJE, "Una arana te mordio!");
+        //
+        // anadirElemento(5, 8, Elemento.TRAMPA_DE_PINCHOS);
+        // anadirEvento(5, 8, Evento.PERDER_SALUD, 40);
+        //
+        // anadirElemento(6, 3, Elemento.POCION_ROJA);
+        // anadirEvento(6, 3, Evento.GANAR_SALUD, 25);
         //
         // anadirElemento(10, 10, Elemento.PORTAL);
         // anadirEvento(10, 10, Evento.TELETRANSPORTAR, 2, 14);
