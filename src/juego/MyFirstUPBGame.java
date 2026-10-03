@@ -47,7 +47,10 @@ public class MyFirstUPBGame extends MyFirstUPBGameBase {
         //
         // Ejemplos:
         anadirElemento(3, 5, Elemento.ARANA);
-        anadirEvento(3, 5, Evento.PERDER_SALUD, 30);
+        anadirEvento(3, 5, Evento.PERDER_SALUD, 60);
+
+        anadirElemento(3, 8, Elemento.TROFEO);
+        anadirEvento(3, 8, Evento.GANAR_JUEGO);
         //
         // anadirElemento(7, 2, Elemento.ARANA);
         // anadirEvento(7, 2, Evento.PERDER_VIDA);

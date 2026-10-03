@@ -59,6 +59,10 @@ public abstract class MyFirstUPBGameBase implements GameController {
     /** Imagen de las casillas que el jugador todavia no ha visto. */
     private static final String IMAGEN_OSCURIDAD = "dark";
 
+    /** Imagenes que llenan la ventana al ganar o al perder. */
+    private static final String IMAGEN_VICTORIA = "win";
+    private static final String IMAGEN_DERROTA = "lose";
+
     // ------------------------------------------------------------------
     // Librerias
     // ------------------------------------------------------------------
@@ -225,7 +229,6 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     @Override
     public void initialiseInterface() {
-        graficos.configureGrid(FILAS, COLUMNAS, ANCHO_VENTANA, ALTO_VENTANA, false);
         graficos.addButton(BTN_REINICIAR);
 
         iniciarJuego();
@@ -274,6 +277,9 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     /** Prepara el mapa, el mundo, el jugador y el estado inicial. */
     private void iniciarJuego() {
+        // Se reconstruye la cuadricula porque las pantallas finales la reemplazan.
+        graficos.configureGrid(FILAS, COLUMNAS, ANCHO_VENTANA, ALTO_VENTANA, false);
+
         mapa = crearMapa();
         if (mapa == null || mapa.length != FILAS) {
             throw new IllegalStateException("El mapa debe tener " + FILAS + " filas");
@@ -468,6 +474,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     private void mostrarPantallaVictoria() {
         juegoTerminado = true;
+        mostrarImagenCompleta(IMAGEN_VICTORIA);
         String texto = "Ganaste!";
         if (monedasActivas) {
             texto += " Terminaste con " + monedas + " monedas.";
@@ -477,7 +484,14 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     private void mostrarPantallaDerrota() {
         juegoTerminado = true;
+        mostrarImagenCompleta(IMAGEN_DERROTA);
         mensajes.showMessage("Perdiste! Presiona " + BTN_REINICIAR + " para intentarlo otra vez.");
+    }
+
+    /** Reemplaza el calabozo por una sola casilla con la imagen dada. */
+    private void mostrarImagenCompleta(String imagen) {
+        graficos.configureGrid(1, 1, ANCHO_VENTANA, ALTO_VENTANA, false);
+        graficos.setCellBackgroundImage(0, 0, imagen);
     }
 
     // ------------------------------------------------------------------
