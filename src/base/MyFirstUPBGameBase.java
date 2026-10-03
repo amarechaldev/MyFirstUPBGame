@@ -18,8 +18,8 @@ import juego.Terreno;
  * Base de un juego de exploracion de calabozos.
  *
  * El calabozo es una cuadricula de 16x16. El jugador empieza siempre en la
- * casilla (0,0) y se mueve una casilla a la vez con los botones Arriba, Abajo,
- * Izquierda y Derecha. No puede atravesar paredes. Solo ve las 9 casillas que
+ * casilla (1,1) y se mueve una casilla a la vez con las flechas del teclado o
+ * con W, A, S, D. No puede atravesar paredes. Solo ve las 9 casillas que
  * lo rodean (niebla de guerra).
  *
  * Las vidas (3 al empezar) y las monedas solo se activan si el mundo usa
@@ -38,14 +38,10 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     protected static final int FILAS = 16;
     protected static final int COLUMNAS = 16;
-    protected static final int FILA_INICIAL = 0;
-    protected static final int COLUMNA_INICIAL = 0;
+    protected static final int FILA_INICIAL = 1;
+    protected static final int COLUMNA_INICIAL = 1;
     protected static final int VIDAS_INICIALES = 3;
 
-    private static final String BTN_ARRIBA = "Arriba";
-    private static final String BTN_ABAJO = "Abajo";
-    private static final String BTN_IZQUIERDA = "Izquierda";
-    private static final String BTN_DERECHA = "Derecha";
     private static final String BTN_REINICIAR = "Reiniciar";
 
     /** Imagen de las casillas que el jugador todavia no ha visto. */
@@ -80,6 +76,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
     private boolean monedasActivas;
 
     private boolean juegoTerminado;
+    private MainLibrary library;
 
     /** Un evento asociado a una casilla, con sus datos opcionales. */
     private static class EventoEnCasilla {
@@ -98,7 +95,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     /**
      * Crea el terreno del calabozo: una matriz de 16x16.
-     * La casilla (0,0) no puede ser PARED.
+     * La casilla (1,1) no puede ser PARED.
      */
     protected abstract Terreno[][] crearMapa();
 
@@ -158,12 +155,38 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     @Override
     public void setLibrary(MainLibrary library) {
-        // TODO
+        this.library = library;
+
+        graficos = library.getGraphics();
+        mensajes = library.getMessages();
+        tiempo = library.getTime();
+        sonido = library.getSound();
+        almacenamiento = library.getStorage();
     }
 
     @Override
     public void initialiseInterface() {
-        // TODO
+       
+
+        graficos.configureGrid(FILAS, COLUMNAS);
+        graficos.addButton(BTN_REINICIAR);
+
+        mapa = crearMapa();
+        filaJugador = FILA_INICIAL;
+        columnaJugador = COLUMNA_INICIAL;
+
+        // Dibuja el terreno de todo el calabozo
+        for (int v = 0; v < FILAS; v++) {
+            for (int h = 0; h < COLUMNAS; h++) {
+                graficos.setCellBackgroundImage(v, h, mapa[v][h].getImagen());
+            }
+        }
+
+        // Dibuja al jugador en su casilla inicial
+        Personaje personaje = getPersonaje();
+        if (personaje != null) {
+            graficos.setCellObjectImage(filaJugador, columnaJugador, personaje.getImagen());
+        }
     }
 
     @Override
@@ -174,6 +197,31 @@ public abstract class MyFirstUPBGameBase implements GameController {
     @Override
     public void onCellPressed(int row, int col) {
         // TODO
+    }
+
+    /** Mueve al jugador con las flechas o con W, A, S, D. */
+    @Override
+    public void onKeyPressed(String key) {
+        switch (key) {
+            case "UP":
+            case "W":
+                moverArriba();
+                break;
+            case "DOWN":
+            case "S":
+                moverAbajo();
+                break;
+            case "LEFT":
+            case "A":
+                moverIzquierda();
+                break;
+            case "RIGHT":
+            case "D":
+                moverDerecha();
+                break;
+            default:
+                break;
+        }
     }
 
     // ------------------------------------------------------------------

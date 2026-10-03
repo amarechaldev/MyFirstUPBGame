@@ -9,23 +9,32 @@ import base.MyFirstUPBGameBase;
  * el terreno, los elementos y eventos del mundo, y tu personaje.
  *
  * Recuerda: v es la fila (0 a 15, de arriba hacia abajo) y h es la columna
- * (0 a 15, de izquierda a derecha). El jugador empieza en (0,0).
+ * (0 a 15, de izquierda a derecha). El jugador empieza en (1,1).
  */
 public class MyFirstUPBGame extends MyFirstUPBGameBase {
 
     @Override
     protected Terreno[][] crearMapa() {
-        // TODO (estudiante): devuelve una matriz de 16x16 con el terreno de cada casilla.
-        // La casilla (0,0) no puede ser PARED.
-        //
-        // Ejemplo (primeras filas):
-        // Terreno P = Terreno.PISO, W = Terreno.PARED, L = Terreno.LAVA, A = Terreno.AGUA;
-        // return new Terreno[][] {
-        //     { P, P, P, W, W, W, W, W, W, W, W, W, W, W, W, W },
-        //     { W, W, P, W, P, P, P, L, L, P, P, P, A, A, P, W },
-        //     ...
-        // };
-        return null;
+        Terreno P = Terreno.PISO, W = Terreno.PARED, 
+            L = Terreno.LAVA, A = Terreno.AGUA;
+        return new Terreno[][] {
+            { W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W },
+            { W, P, P, L, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, A, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W }
+        };
     }
 
     @Override
