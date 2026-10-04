@@ -117,7 +117,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     /**
      * Crea el terreno del calabozo: una matriz de 14 filas x 28 columnas.
-     * La casilla (1,1) no puede ser PARED.
+     * Las casillas del borde deben ser PARED. La casilla (1,1) no puede ser PARED.
      */
     protected abstract Terreno[][] crearMapa();
 
@@ -222,6 +222,19 @@ public abstract class MyFirstUPBGameBase implements GameController {
         }
     }
 
+    /** Las casillas del borde del mapa deben ser PARED. */
+    private void validarBordes() {
+        for (int v = 0; v < FILAS; v++) {
+            for (int h = 0; h < COLUMNAS; h++) {
+                boolean esBorde = v == 0 || v == FILAS - 1 || h == 0 || h == COLUMNAS - 1;
+                if (esBorde && mapa[v][h] != Terreno.PARED) {
+                    throw new IllegalStateException(
+                            "La casilla (" + v + "," + h + ") del borde del calabozo debe ser PARED");
+                }
+            }
+        }
+    }
+
     // ------------------------------------------------------------------
     // GameController
     // ------------------------------------------------------------------
@@ -299,6 +312,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
                 throw new IllegalStateException("Cada fila del mapa debe tener " + COLUMNAS + " columnas");
             }
         }
+        validarBordes();
         if (mapa[FILA_INICIAL][COLUMNA_INICIAL] == Terreno.PARED) {
             throw new IllegalStateException(
                     "La casilla inicial (" + FILA_INICIAL + "," + COLUMNA_INICIAL + ") no puede ser PARED");
