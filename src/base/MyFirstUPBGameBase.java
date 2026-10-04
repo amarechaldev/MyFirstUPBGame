@@ -18,7 +18,7 @@ import juego.Terreno;
 /**
  * Base de un juego de exploracion de calabozos.
  *
- * El calabozo es una cuadricula de 20x20. El jugador empieza siempre en la
+ * El calabozo es una cuadricula de 14 filas x 28 columnas. El jugador empieza siempre en la
  * casilla (1,1) y se mueve una casilla a la vez con las flechas del teclado o
  * con W, A, S, D. No puede atravesar paredes. Solo ve las 9 casillas que
  * lo rodean (niebla de guerra).
@@ -39,16 +39,19 @@ public abstract class MyFirstUPBGameBase implements GameController {
     // Constantes
     // ------------------------------------------------------------------
 
-    protected static final int FILAS = 20;
-    protected static final int COLUMNAS = 20;
+    protected static final int FILAS = 14;
+    protected static final int COLUMNAS = 28;
     protected static final int FILA_INICIAL = 1;
     protected static final int COLUMNA_INICIAL = 1;
     protected static final int VIDAS_INICIALES = 3;
     protected static final int SALUD_MAXIMA = 100;
 
-    /** Tamano de la ventana: cabe en pantallas antiguas de 1024x768. */
+    /**
+     * Tamano inicial de la ventana, en formato 16:9: cabe en pantallas
+     * antiguas de 1024 de ancho. Se puede maximizar.
+     */
     private static final int ANCHO_VENTANA = 1024;
-    private static final int ALTO_VENTANA = 768;
+    private static final int ALTO_VENTANA = 576;
 
     private static final String BTN_REINICIAR = "Reiniciar";
 
@@ -113,7 +116,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
     // ------------------------------------------------------------------
 
     /**
-     * Crea el terreno del calabozo: una matriz de 20x20.
+     * Crea el terreno del calabozo: una matriz de 14 filas x 28 columnas.
      * La casilla (1,1) no puede ser PARED.
      */
     protected abstract Terreno[][] crearMapa();
