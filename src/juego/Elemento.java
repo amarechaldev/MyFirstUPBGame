@@ -4,7 +4,8 @@ package juego;
  * Elementos (objetos y personajes) que se pueden colocar en el calabozo.
  *
  * Los elementos nunca se mueven. Se colocan uno por uno con
- * anadirElemento(v, h, Elemento) dentro de construirMundo().
+ * anadirElemento(v, h, Elemento) dentro de construirMundo(), nunca sobre
+ * una casilla de PARED.
  * Cada elemento esta asociado a una imagen de la carpeta resources/images.
  */
 public enum Elemento {

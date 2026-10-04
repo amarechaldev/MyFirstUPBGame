@@ -134,9 +134,16 @@ public abstract class MyFirstUPBGameBase implements GameController {
     // Metodos para usar dentro de construirMundo()
     // ------------------------------------------------------------------
 
-    /** Coloca un elemento en la casilla (v, h). Los elementos nunca se mueven. */
+    /**
+     * Coloca un elemento en la casilla (v, h). Los elementos nunca se mueven.
+     * La casilla no puede ser PARED.
+     */
     protected void anadirElemento(int v, int h, Elemento elemento) {
         validarCasilla(v, h);
+        if (mapa[v][h] == Terreno.PARED) {
+            throw new IllegalArgumentException(
+                    "No se puede colocar " + elemento + " en (" + v + "," + h + "): la casilla es PARED");
+        }
         elementos[v][h] = elemento;
     }
 
