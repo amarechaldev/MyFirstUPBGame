@@ -20,3 +20,4 @@ Thumbs.db
 # Build outputs (see build.sh and package.sh)
 MyFirstUPBGame.jar
 dist/
+.claude/settings.local.json

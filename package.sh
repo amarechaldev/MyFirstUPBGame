@@ -17,10 +17,18 @@ DIST_DIR="dist"
 
 for tool in jpackage jar; do
     if ! command -v "$tool" > /dev/null 2>&1; then
-        echo "Error: '$tool' not found. Install a JDK (17 or newer) and add it to the PATH." >&2
+        echo "Error: '$tool' not found. Install a JDK (14 or newer) and add it to the PATH." >&2
         exit 1
     fi
 done
+
+# --jlink-options only exists from JDK 16. Older jpackage (14, 15) already
+# strips debug info, header files and man pages by default.
+JPACKAGE_VERSION="$(jpackage --version 2>/dev/null | grep -Eo '^[0-9]+' | head -n 1 || true)"
+JPACKAGE_OPTS=()
+if [ -z "$JPACKAGE_VERSION" ] || [ "$JPACKAGE_VERSION" -ge 16 ]; then
+    JPACKAGE_OPTS+=(--jlink-options "--strip-debug --no-header-files --no-man-pages")
+fi
 
 ./build.sh
 
@@ -36,7 +44,7 @@ jpackage --type app-image \
     --main-jar "$JAR" \
     --main-class "$MAIN_CLASS" \
     --add-modules "$MODULES" \
-    --jlink-options "--strip-debug --no-header-files --no-man-pages" \
+    ${JPACKAGE_OPTS[@]+"${JPACKAGE_OPTS[@]}"} \
     --dest "$DIST_DIR"
 
 rm -rf build
