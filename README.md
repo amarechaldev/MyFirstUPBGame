@@ -46,16 +46,27 @@ anadirElemento(12, 25, Elemento.PUERTA);
 anadirEvento(12, 25, Evento.GANAR_JUEGO);
 ```
 
+Events added with `anadirEvento` happen **every time** the player enters the cell. Use `anadirEventoUnaVez` for events that should happen **only the first time**, and `anadirElementoUnaVez` for elements that disappear once the player picks them up. You choose for each event, so one cell can mix both:
+
+```java
+anadirElementoUnaVez(4, 6, Elemento.COFRE);
+anadirEventoUnaVez(4, 6, Evento.GANAR_MONEDAS, 10);
+anadirEventoUnaVez(4, 6, Evento.MOSTRAR_MENSAJE, "Encontraste 10 monedas!");
+anadirEvento(4, 6, Evento.PERDER_SALUD, 10); // the chest is cursed: it hurts on every visit
+```
+
+Pressing **Reiniciar** brings back every one-time event and element.
+
 There are more than 50 elements to choose from (`DRAGON`, `COFRE`, `FANTASMA`, `POCION_ROJA`, `PATO_DE_GOMA`, …). See [`Elemento.java`](src/juego/Elemento.java) for the full list.
 
-| Event | Extra data | Effect |
-|---|---|---|
-| `GANAR_VIDA` / `PERDER_VIDA` | none | Gain or lose a life (start with 3, lose at 0) |
-| `GANAR_SALUD` / `PERDER_SALUD` | amount | Gain or lose health (max 100; at 0 you lose a life and health resets) |
-| `GANAR_MONEDAS` / `PERDER_MONEDAS` | amount | Gain or lose coins |
-| `MOSTRAR_MENSAJE` | text | Show a message |
-| `TELETRANSPORTAR` | destination row, column | Move the player to another cell |
-| `GANAR_JUEGO` / `PERDER_JUEGO` | none | Show the victory or defeat screen |
+| Event | Extra data | Effect | Usually |
+|---|---|---|---|
+| `GANAR_VIDA` / `PERDER_VIDA` | none | Gain or lose a life (start with 3, lose at 0) | gain: once · lose: every time |
+| `GANAR_SALUD` / `PERDER_SALUD` | amount | Gain or lose health (max 100; at 0 you lose a life and health resets) | gain: once · lose: every time |
+| `GANAR_MONEDAS` / `PERDER_MONEDAS` | amount | Gain or lose coins | gain: once · lose: every time |
+| `MOSTRAR_MENSAJE` | text | Show a message | same as the other events in its cell |
+| `TELETRANSPORTAR` | destination row, column | Move the player to another cell | every time |
+| `GANAR_JUEGO` / `PERDER_JUEGO` | none | Show the victory or defeat screen | either (the game ends) |
 
 A cell can have several events, and they run in the order they were added.
 

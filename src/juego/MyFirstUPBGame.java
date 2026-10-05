@@ -19,9 +19,9 @@ public class MyFirstUPBGame extends MyFirstUPBGameBase {
             L = Terreno.LAVA, A = Terreno.AGUA;
         return new Terreno[][] {
             { W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W },
-            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
-            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
-            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, L, L, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, A, A, P, L, L, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, A, A, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
             { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
             { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
             { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
@@ -42,6 +42,10 @@ public class MyFirstUPBGame extends MyFirstUPBGameBase {
        
         // TODO (estudiante): coloca elementos y eventos en las casillas.
         //
+        // anadirEvento(...) ocurre cada vez que el jugador entra a la casilla;
+        // anadirEventoUnaVez(...) solo la primera vez. anadirElementoUnaVez(...)
+        // coloca un elemento que desaparece cuando el jugador lo recoge.
+        //
         // Ejemplos:
         //
         // anadirElemento(7, 2, Elemento.ARANA);
@@ -51,8 +55,12 @@ public class MyFirstUPBGame extends MyFirstUPBGameBase {
         // anadirElemento(5, 8, Elemento.TRAMPA_DE_PINCHOS);
         // anadirEvento(5, 8, Evento.PERDER_SALUD, 40);
         //
-        // anadirElemento(6, 3, Elemento.POCION_ROJA);
-        // anadirEvento(6, 3, Evento.GANAR_SALUD, 25);
+        // anadirElementoUnaVez(6, 3, Elemento.POCION_ROJA);
+        // anadirEventoUnaVez(6, 3, Evento.GANAR_SALUD, 25);
+        //
+        // anadirElementoUnaVez(4, 6, Elemento.COFRE);
+        // anadirEventoUnaVez(4, 6, Evento.GANAR_MONEDAS, 10);
+        // anadirEventoUnaVez(4, 6, Evento.MOSTRAR_MENSAJE, "Encontraste 10 monedas!");
         //
         // anadirElemento(10, 10, Elemento.PORTAL);
         // anadirEvento(10, 10, Evento.TELETRANSPORTAR, 2, 14);

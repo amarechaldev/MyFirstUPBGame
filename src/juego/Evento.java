@@ -5,6 +5,13 @@ package juego;
  *
  * Se asocian a una casilla con alguno de los metodos anadirEvento(...)
  * de MyFirstUPBGameBase.
+ *
+ * Con anadirEvento(...) el evento ocurre cada vez que el jugador entra a la
+ * casilla; con anadirEventoUnaVez(...) solo la primera vez. Lo habitual es:
+ * - Una vez: GANAR_VIDA, GANAR_SALUD y GANAR_MONEDAS (objetos que se recogen).
+ * - Siempre: PERDER_VIDA, PERDER_SALUD, PERDER_MONEDAS (trampas y enemigos)
+ *   y TELETRANSPORTAR (portales).
+ * - MOSTRAR_MENSAJE: igual que los otros eventos de su casilla.
  */
 public enum Evento {
     /** Suma una vida. Activa el sistema de vidas. */

@@ -28,6 +28,11 @@ import juego.Terreno;
  * el mundo usa eventos de salud; si llega a 0 se pierde una vida y la salud
  * vuelve a 100.
  *
+ * Los eventos agregados con anadirEvento(...) ocurren cada vez que el jugador
+ * entra a la casilla; los agregados con anadirEventoUnaVez(...) solo la
+ * primera vez. Los elementos agregados con anadirElementoUnaVez(...)
+ * desaparecen cuando el jugador entra a su casilla. Reiniciar los recupera.
+ *
  * Las clases hijas definen el mapa, el personaje y los elementos y eventos
  * del mundo.
  *
@@ -82,6 +87,8 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     private Terreno[][] mapa;
     private Elemento[][] elementos;
+    /** Casillas cuyo elemento desaparece cuando el jugador entra en ellas. */
+    private boolean[][] desapareceAlEntrar;
     private List<EventoEnCasilla> eventos;
     private boolean[][] revelado;
 
@@ -108,6 +115,10 @@ public abstract class MyFirstUPBGameBase implements GameController {
         private String texto;
         private int vDestino;
         private int hDestino;
+        /** Si es true, el evento solo ocurre la primera vez. */
+        private boolean unaVez;
+        /** Si es true, el evento de una sola vez ya ocurrio. */
+        private boolean usado;
     }
 
     // ------------------------------------------------------------------
@@ -135,63 +146,130 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     /**
      * Coloca un elemento en la casilla (v, h). Los elementos nunca se mueven.
+     * El elemento se queda en la casilla todo el juego.
      * La casilla no puede ser PARED.
      */
     protected void anadirElemento(int v, int h, Elemento elemento) {
+        crearElemento(v, h, elemento, false);
+    }
+
+    /**
+     * Coloca un elemento en la casilla (v, h) que desaparece cuando el
+     * jugador entra en la casilla (monedas, pociones, corazones...).
+     * La casilla no puede ser PARED.
+     */
+    protected void anadirElementoUnaVez(int v, int h, Elemento elemento) {
+        crearElemento(v, h, elemento, true);
+    }
+
+    /**
+     * Asocia un evento sin datos a la casilla (v, h), que ocurre cada vez que
+     * el jugador entra: GANAR_VIDA, PERDER_VIDA, GANAR_JUEGO o PERDER_JUEGO.
+     */
+    protected void anadirEvento(int v, int h, Evento evento) {
+        crearEvento(v, h, evento, false);
+    }
+
+    /**
+     * Asocia un evento sin datos a la casilla (v, h), que solo ocurre la
+     * primera vez que el jugador entra: GANAR_VIDA, PERDER_VIDA, GANAR_JUEGO
+     * o PERDER_JUEGO.
+     */
+    protected void anadirEventoUnaVez(int v, int h, Evento evento) {
+        crearEvento(v, h, evento, true);
+    }
+
+    /**
+     * Asocia un evento con una cantidad a la casilla (v, h), que ocurre cada
+     * vez que el jugador entra: GANAR_MONEDAS, PERDER_MONEDAS, GANAR_SALUD o
+     * PERDER_SALUD.
+     */
+    protected void anadirEvento(int v, int h, Evento evento, int cantidad) {
+        crearEventoConCantidad(v, h, evento, cantidad, false);
+    }
+
+    /**
+     * Asocia un evento con una cantidad a la casilla (v, h), que solo ocurre
+     * la primera vez que el jugador entra: GANAR_MONEDAS, PERDER_MONEDAS,
+     * GANAR_SALUD o PERDER_SALUD.
+     */
+    protected void anadirEventoUnaVez(int v, int h, Evento evento, int cantidad) {
+        crearEventoConCantidad(v, h, evento, cantidad, true);
+    }
+
+    /**
+     * Asocia un evento con un texto a la casilla (v, h), que ocurre cada vez
+     * que el jugador entra: MOSTRAR_MENSAJE (el mensaje).
+     */
+    protected void anadirEvento(int v, int h, Evento evento, String texto) {
+        crearEventoConTexto(v, h, evento, texto, false);
+    }
+
+    /**
+     * Asocia un evento con un texto a la casilla (v, h), que solo ocurre la
+     * primera vez que el jugador entra: MOSTRAR_MENSAJE (el mensaje).
+     */
+    protected void anadirEventoUnaVez(int v, int h, Evento evento, String texto) {
+        crearEventoConTexto(v, h, evento, texto, true);
+    }
+
+    /**
+     * Asocia un evento TELETRANSPORTAR a la casilla (v, h), que ocurre cada
+     * vez que el jugador entra. El destino (vDestino, hDestino) no puede ser PARED.
+     */
+    protected void anadirEvento(int v, int h, Evento evento, int vDestino, int hDestino) {
+        crearTeletransporte(v, h, evento, vDestino, hDestino, false);
+    }
+
+    /**
+     * Asocia un evento TELETRANSPORTAR a la casilla (v, h), que solo ocurre
+     * la primera vez que el jugador entra. El destino (vDestino, hDestino) no
+     * puede ser PARED.
+     */
+    protected void anadirEventoUnaVez(int v, int h, Evento evento, int vDestino, int hDestino) {
+        crearTeletransporte(v, h, evento, vDestino, hDestino, true);
+    }
+
+    private void crearElemento(int v, int h, Elemento elemento, boolean desaparece) {
         validarCasilla(v, h);
         if (mapa[v][h] == Terreno.PARED) {
             throw new IllegalArgumentException(
                     "No se puede colocar " + elemento + " en (" + v + "," + h + "): la casilla es PARED");
         }
         elementos[v][h] = elemento;
+        desapareceAlEntrar[v][h] = desaparece;
     }
 
-    /**
-     * Asocia un evento sin datos a la casilla (v, h):
-     * GANAR_VIDA, PERDER_VIDA, GANAR_JUEGO o PERDER_JUEGO.
-     */
-    protected void anadirEvento(int v, int h, Evento evento) {
+    private void crearEvento(int v, int h, Evento evento, boolean unaVez) {
         if (evento != Evento.GANAR_VIDA && evento != Evento.PERDER_VIDA
                 && evento != Evento.GANAR_JUEGO && evento != Evento.PERDER_JUEGO) {
             throw new IllegalArgumentException("El evento " + evento + " necesita datos adicionales");
         }
-        registrarEvento(v, h, evento);
+        registrarEvento(v, h, evento, unaVez);
         vidasActivas = vidasActivas || evento == Evento.GANAR_VIDA || evento == Evento.PERDER_VIDA;
     }
 
-    /**
-     * Asocia un evento con una cantidad a la casilla (v, h):
-     * GANAR_MONEDAS, PERDER_MONEDAS, GANAR_SALUD o PERDER_SALUD.
-     */
-    protected void anadirEvento(int v, int h, Evento evento, int cantidad) {
+    private void crearEventoConCantidad(int v, int h, Evento evento, int cantidad, boolean unaVez) {
         boolean esMonedas = evento == Evento.GANAR_MONEDAS || evento == Evento.PERDER_MONEDAS;
         boolean esSalud = evento == Evento.GANAR_SALUD || evento == Evento.PERDER_SALUD;
         if (!esMonedas && !esSalud) {
             throw new IllegalArgumentException("El evento " + evento + " no usa una cantidad");
         }
-        registrarEvento(v, h, evento).cantidad = cantidad;
+        registrarEvento(v, h, evento, unaVez).cantidad = cantidad;
         monedasActivas = monedasActivas || esMonedas;
         // La salud puede quitar vidas, asi que tambien activa las vidas.
         saludActiva = saludActiva || esSalud;
         vidasActivas = vidasActivas || esSalud;
     }
 
-    /**
-     * Asocia un evento con un texto a la casilla (v, h):
-     * MOSTRAR_MENSAJE (el mensaje).
-     */
-    protected void anadirEvento(int v, int h, Evento evento, String texto) {
+    private void crearEventoConTexto(int v, int h, Evento evento, String texto, boolean unaVez) {
         if (evento != Evento.MOSTRAR_MENSAJE) {
             throw new IllegalArgumentException("El evento " + evento + " no usa un texto");
         }
-        registrarEvento(v, h, evento).texto = texto;
+        registrarEvento(v, h, evento, unaVez).texto = texto;
     }
 
-    /**
-     * Asocia un evento TELETRANSPORTAR a la casilla (v, h).
-     * El destino (vDestino, hDestino) no puede ser PARED.
-     */
-    protected void anadirEvento(int v, int h, Evento evento, int vDestino, int hDestino) {
+    private void crearTeletransporte(int v, int h, Evento evento, int vDestino, int hDestino, boolean unaVez) {
         if (evento != Evento.TELETRANSPORTAR) {
             throw new IllegalArgumentException("El evento " + evento + " no usa una casilla de destino");
         }
@@ -200,17 +278,18 @@ public abstract class MyFirstUPBGameBase implements GameController {
             throw new IllegalArgumentException(
                     "El destino (" + vDestino + "," + hDestino + ") no puede ser PARED");
         }
-        EventoEnCasilla nuevo = registrarEvento(v, h, evento);
+        EventoEnCasilla nuevo = registrarEvento(v, h, evento, unaVez);
         nuevo.vDestino = vDestino;
         nuevo.hDestino = hDestino;
     }
 
-    private EventoEnCasilla registrarEvento(int v, int h, Evento evento) {
+    private EventoEnCasilla registrarEvento(int v, int h, Evento evento, boolean unaVez) {
         validarCasilla(v, h);
         EventoEnCasilla nuevo = new EventoEnCasilla();
         nuevo.v = v;
         nuevo.h = h;
         nuevo.evento = evento;
+        nuevo.unaVez = unaVez;
         eventos.add(nuevo);
         return nuevo;
     }
@@ -316,6 +395,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
         }
 
         elementos = new Elemento[FILAS][COLUMNAS];
+        desapareceAlEntrar = new boolean[FILAS][COLUMNAS];
         eventos = new ArrayList<>();
         revelado = new boolean[FILAS][COLUMNAS];
 
@@ -350,9 +430,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
             return;
         }
         filaJugador = v;
-        revelarAlrededor();
-        actualizarInterfaz();
-        ejecutarEventos(filaJugador, columnaJugador);
+        entrarEnCasilla();
     }
 
     private void moverAbajo() {
@@ -361,9 +439,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
             return;
         }
         filaJugador = v;
-        revelarAlrededor();
-        actualizarInterfaz();
-        ejecutarEventos(filaJugador, columnaJugador);
+        entrarEnCasilla();
     }
 
     private void moverIzquierda() {
@@ -372,9 +448,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
             return;
         }
         columnaJugador = h;
-        revelarAlrededor();
-        actualizarInterfaz();
-        ejecutarEventos(filaJugador, columnaJugador);
+        entrarEnCasilla();
     }
 
     private void moverDerecha() {
@@ -383,6 +457,18 @@ public abstract class MyFirstUPBGameBase implements GameController {
             return;
         }
         columnaJugador = h;
+        entrarEnCasilla();
+    }
+
+    /**
+     * El jugador acaba de entrar a su casilla actual: si el elemento es de una
+     * sola vez desaparece, se redibuja el calabozo y se ejecutan los eventos.
+     */
+    private void entrarEnCasilla() {
+        if (desapareceAlEntrar[filaJugador][columnaJugador]) {
+            elementos[filaJugador][columnaJugador] = null;
+            desapareceAlEntrar[filaJugador][columnaJugador] = false;
+        }
         revelarAlrededor();
         actualizarInterfaz();
         ejecutarEventos(filaJugador, columnaJugador);
@@ -395,15 +481,19 @@ public abstract class MyFirstUPBGameBase implements GameController {
     /**
      * Ejecuta, en orden, todos los eventos asociados a la casilla (v, h).
      * Se detiene si el juego termina. Teletransportar no ejecuta los eventos
-     * de la casilla de destino.
+     * de la casilla de destino. Los eventos de una sola vez que ya ocurrieron
+     * se saltan.
      */
     private void ejecutarEventos(int v, int h) {
         for (EventoEnCasilla e : new ArrayList<>(eventos)) {
             if (juegoTerminado) {
                 return;
             }
-            if (e.v != v || e.h != h) {
+            if (e.v != v || e.h != h || e.usado) {
                 continue;
+            }
+            if (e.unaVez) {
+                e.usado = true;
             }
             switch (e.evento) {
                 case GANAR_VIDA:
