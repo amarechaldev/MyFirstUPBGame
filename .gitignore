@@ -16,3 +16,7 @@ build/
 # OS Generated Files
 .DS_Store
 Thumbs.db
+
+# Build outputs (see build.sh and package.sh)
+MyFirstUPBGame.jar
+dist/

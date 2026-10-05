@@ -67,7 +67,7 @@ The game checks what students write: placing an element on a wall, using a cell 
 
 ## Running the game
 
-You need **Java 11 or later**. The entry point is `base.LaunchMyFirstUPBGame`.
+You need **Java 8 or later**. The entry point is `base.LaunchMyFirstUPBGame`.
 
 **In an IDE (Eclipse, IntelliJ, VS Code):** open the project, add `lib/upb-game.jar` to the classpath, mark `src` as the source folder, and run `LaunchMyFirstUPBGame`. Run it with the project root as the working directory so the game can find `resources/images`.
 
@@ -82,6 +82,19 @@ java -cp "bin;lib/upb-game.jar" base.LaunchMyFirstUPBGame
 javac -cp lib/upb-game.jar -d bin src/base/*.java src/juego/*.java
 java -cp "bin:lib/upb-game.jar" base.LaunchMyFirstUPBGame
 ```
+
+## Sharing a finished game
+
+Two scripts at the project root build a version of the game that other people can play. Both need a JDK on the PATH and run in Git Bash on Windows or in a terminal on macOS and Linux.
+
+- **`./build.sh`** creates `MyFirstUPBGame.jar`. Anyone with **Java 8 or later** can play it by double-clicking it or running `java -jar MyFirstUPBGame.jar`.
+- **`./package.sh`** creates `dist/MyFirstUPBGame-windows.zip` (or `-macos.zip`), which contains the game and its own Java runtime. Players **don't need Java installed**: they unzip it and launch `MyFirstUPBGame.exe` (or `MyFirstUPBGame.app`). It needs JDK 17 or later to build.
+
+Things to know before sharing the zip:
+
+- It only runs on the operating system it was built on. Build the macOS version on a Mac.
+- The app isn't signed. On Windows, SmartScreen may block it: click **More info → Run anyway**. On macOS, right-click the app and choose **Open**.
+- The packaged game has no console, so the error messages for an invalid dungeon aren't shown. Package only a dungeon that already runs correctly.
 
 ## Project structure
 

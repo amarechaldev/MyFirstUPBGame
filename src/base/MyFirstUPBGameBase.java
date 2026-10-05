@@ -98,7 +98,6 @@ public abstract class MyFirstUPBGameBase implements GameController {
     private boolean monedasActivas;
 
     private boolean juegoTerminado;
-    private MainLibrary library;
 
     /** Un evento asociado a una casilla, con sus datos opcionales. */
     private static class EventoEnCasilla {
@@ -241,8 +240,6 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     @Override
     public void setLibrary(MainLibrary library) {
-        this.library = library;
-
         graficos = library.getGraphics();
         mensajes = library.getMessages();
         tiempo = library.getTime();
