@@ -39,11 +39,10 @@ public class MyFirstUPBGame extends MyFirstUPBGameBase {
     protected void construirMundo() {
         anadirElemento(1, 1, Elemento.PUERTA);
         anadirEvento(1, 1, Evento.MOSTRAR_MENSAJE,  "No te escapes!");
+       
         // TODO (estudiante): coloca elementos y eventos en las casillas.
         //
         // Ejemplos:
-        // anadirElemento(3, 5, Elemento.ARANA);
-        // anadirEvento(3, 5, Evento.PERDER_SALUD, 60);
         //
         // anadirElemento(7, 2, Elemento.ARANA);
         // anadirEvento(7, 2, Evento.PERDER_VIDA);
@@ -65,6 +64,6 @@ public class MyFirstUPBGame extends MyFirstUPBGameBase {
     @Override
     protected Personaje getPersonaje() {
         // TODO (estudiante): elige PERSONAJE1, PERSONAJE2 o PERSONAJE3.
-        return Personaje.PERSONAJE3;
+        return Personaje.PERSONAJE1;
     }
 }
