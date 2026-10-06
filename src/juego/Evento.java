@@ -16,7 +16,8 @@ package juego;
  * Los eventos de una casilla ocurren todos juntos, asi que en una misma
  * casilla no se puede repetir un evento ni mezclar eventos opuestos
  * (GANAR_VIDA y PERDER_VIDA...), y GANAR_JUEGO o PERDER_JUEGO deben ser el
- * unico evento. TELETRANSPORTAR ocurre despues de los demas eventos.
+ * unico evento. TELETRANSPORTAR ocurre despues de los demas eventos, y luego
+ * ocurren los eventos de la casilla de destino.
  */
 public enum Evento {
     /** Suma una vida. Activa el sistema de vidas. */
@@ -40,6 +41,9 @@ public enum Evento {
     PERDER_JUEGO,
     /** Muestra un mensaje. Necesita un texto. */
     MOSTRAR_MENSAJE,
-    /** Lleva al jugador a otra casilla. Necesita la casilla de destino. */
+    /**
+     * Lleva al jugador a otra casilla. Necesita la casilla de destino. Los
+     * eventos del destino tambien ocurren.
+     */
     TELETRANSPORTAR
 }

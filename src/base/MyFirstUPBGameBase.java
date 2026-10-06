@@ -150,7 +150,10 @@ public abstract class MyFirstUPBGameBase implements GameController {
     // - No se pueden mezclar eventos opuestos (GANAR_VIDA y PERDER_VIDA,
     //   GANAR_MONEDAS y PERDER_MONEDAS, GANAR_SALUD y PERDER_SALUD).
     // - GANAR_JUEGO y PERDER_JUEGO deben ser el unico evento de su casilla.
-    // TELETRANSPORTAR ocurre despues de los demas eventos de su casilla.
+    // TELETRANSPORTAR ocurre despues de los demas eventos de su casilla. Al
+    // llegar al destino se ejecutan sus eventos (los teletransportes se
+    // encadenan), salvo un teletransporte a una casilla ya visitada en la
+    // cadena.
     // ------------------------------------------------------------------
 
     /**
@@ -525,15 +528,32 @@ public abstract class MyFirstUPBGameBase implements GameController {
     /**
      * El jugador acaba de entrar a su casilla actual: si el elemento es de una
      * sola vez desaparece, se redibuja el calabozo y se ejecutan los eventos.
+     * Si hay un teletransporte, el jugador entra a la casilla de destino de la
+     * misma forma, asi que los teletransportes se pueden encadenar. Un
+     * teletransporte no ocurre si su destino ya se visito en esta cadena: asi
+     * los portales de ida y vuelta funcionan y la cadena siempre termina.
      */
     private void entrarEnCasilla() {
-        if (desapareceAlEntrar[filaJugador][columnaJugador]) {
-            elementos[filaJugador][columnaJugador] = null;
-            desapareceAlEntrar[filaJugador][columnaJugador] = false;
+        boolean[][] visitadas = new boolean[FILAS][COLUMNAS];
+        while (true) {
+            visitadas[filaJugador][columnaJugador] = true;
+            if (desapareceAlEntrar[filaJugador][columnaJugador]) {
+                elementos[filaJugador][columnaJugador] = null;
+                desapareceAlEntrar[filaJugador][columnaJugador] = false;
+            }
+            revelarAlrededor();
+            actualizarInterfaz();
+            EventoEnCasilla teletransporte = ejecutarEventos(filaJugador, columnaJugador);
+            if (teletransporte == null || juegoTerminado
+                    || visitadas[teletransporte.vDestino][teletransporte.hDestino]) {
+                return;
+            }
+            if (teletransporte.unaVez) {
+                teletransporte.usado = true;
+            }
+            filaJugador = teletransporte.vDestino;
+            columnaJugador = teletransporte.hDestino;
         }
-        revelarAlrededor();
-        actualizarInterfaz();
-        ejecutarEventos(filaJugador, columnaJugador);
     }
 
     // ------------------------------------------------------------------
@@ -541,21 +561,22 @@ public abstract class MyFirstUPBGameBase implements GameController {
     // ------------------------------------------------------------------
 
     /**
-     * Ejecuta todos los eventos asociados a la casilla (v, h). Se detiene si
-     * el juego termina. Teletransportar ocurre al final, despues de los demas
-     * eventos de la casilla, y no ejecuta los eventos de la casilla de
-     * destino. Los eventos de una sola vez que ya ocurrieron se saltan.
+     * Ejecuta los eventos asociados a la casilla (v, h), menos el
+     * teletransporte: lo devuelve (o null si no hay) para que
+     * entrarEnCasilla() lo haga despues de los demas eventos. Se detiene si
+     * el juego termina. Los eventos de una sola vez que ya ocurrieron se
+     * saltan; un teletransporte de una sola vez solo se gasta si ocurre.
      */
-    private void ejecutarEventos(int v, int h) {
+    private EventoEnCasilla ejecutarEventos(int v, int h) {
         EventoEnCasilla teletransporte = null;
         for (EventoEnCasilla e : new ArrayList<>(eventos)) {
             if (juegoTerminado) {
-                return;
+                return null;
             }
             if (e.v != v || e.h != h || e.usado) {
                 continue;
             }
-            if (e.unaVez) {
+            if (e.unaVez && e.evento != Evento.TELETRANSPORTAR) {
                 e.usado = true;
             }
             switch (e.evento) {
@@ -593,12 +614,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
                     break;
             }
         }
-        if (teletransporte != null && !juegoTerminado) {
-            filaJugador = teletransporte.vDestino;
-            columnaJugador = teletransporte.hDestino;
-            revelarAlrededor();
-            actualizarInterfaz();
-        }
+        return teletransporte;
     }
 
     private void ganarVida() {

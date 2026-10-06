@@ -74,7 +74,9 @@ A cell can have several events. They all happen together when the player enters,
 - A cell can't mix opposite events: `GANAR_VIDA` with `PERDER_VIDA`, `GANAR_SALUD` with `PERDER_SALUD`, or `GANAR_MONEDAS` with `PERDER_MONEDAS`.
 - `GANAR_JUEGO` and `PERDER_JUEGO` must be the only event in their cell.
 
-`TELETRANSPORTAR` happens after the cell's other events, and the events at the destination cell don't run.
+`TELETRANSPORTAR` happens after the cell's other events. Then the player enters the destination cell as if they had walked in: its events run too (and a one-time element there disappears), so teleports can chain. A teleport whose destination was already visited in the same chain doesn't happen, and the player stays where they are. This is what makes two-way portals work: from A you land on B, and B's teleport back to A is skipped. A one-time teleport that gets skipped this way isn't used up.
+
+Keep cells in a teleport chain simple: avoid adding other events to them, because they'll run every time the player passes through.
 
 ### 3. The character: `getPersonaje()`
 

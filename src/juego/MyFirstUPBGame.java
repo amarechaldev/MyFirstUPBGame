@@ -39,7 +39,7 @@ public class MyFirstUPBGame extends MyFirstUPBGameBase {
     protected void construirMundo() {
         anadirElemento(1, 1, Elemento.PUERTA);
         anadirEvento(1, 1, Evento.MOSTRAR_MENSAJE,  "No te escapes!");
-       
+
         // TODO (estudiante): coloca elementos y eventos en las casillas.
         //
         // anadirEvento(...) ocurre cada vez que el jugador entra a la casilla;
