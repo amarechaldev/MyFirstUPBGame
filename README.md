@@ -99,7 +99,7 @@ java -cp "bin:lib/upb-game.jar" base.LaunchMyFirstUPBGame
 Two scripts at the project root build a version of the game that other people can play. Both need a JDK on the PATH and run in Git Bash on Windows or in a terminal on macOS and Linux.
 
 - **`./build.sh`** creates `MyFirstUPBGame.jar`. Anyone with **Java 8 or later** can play it by double-clicking it or running `java -jar MyFirstUPBGame.jar`.
-- **`./package.sh`** creates `dist/MyFirstUPBGame-windows.zip` (or `-macos.zip`), which contains the game and its own Java runtime. Players **don't need Java installed**: they unzip it and launch `MyFirstUPBGame.exe` (or `MyFirstUPBGame.app`). It needs JDK 17 or later to build.
+- **`./package.sh`** creates `dist/MyFirstUPBGame-windows.zip` (or `-macos.zip`), which contains the game and its own Java runtime. Players **don't need Java installed**: they unzip it and launch `MyFirstUPBGame.exe` (or `MyFirstUPBGame.app`). It needs JDK 17 or later to build. If it says `jpackage` is not found, set `JAVA_HOME` to your JDK folder (for example `export JAVA_HOME="/c/Program Files/Java/jdk-21"`) and run it again.
 
 Things to know before sharing the zip:
 

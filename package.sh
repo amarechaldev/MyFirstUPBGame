@@ -15,16 +15,67 @@ MODULES="java.base,java.desktop"
 INPUT_DIR="build/jpackage-input"
 DIST_DIR="dist"
 
-for tool in jpackage jar; do
-    if ! command -v "$tool" > /dev/null 2>&1; then
-        echo "Error: '$tool' not found. Install a JDK (14 or newer) and add it to the PATH." >&2
-        exit 1
+# Prints the path of the JDK's bin folder that contains jpackage, or nothing.
+# The PATH often only holds launchers for java/javac (Oracle's "javapath" on
+# Windows, /usr/bin on macOS) without jpackage, so other places are tried too.
+find_jdk_bin() {
+    local candidates=()
+    if [ -n "${JAVA_HOME:-}" ]; then
+        local java_home_env="$JAVA_HOME"
+        command -v cygpath > /dev/null 2>&1 && java_home_env="$(cygpath -u "$java_home_env")"
+        candidates+=("$java_home_env/bin")
     fi
-done
+    if command -v jpackage > /dev/null 2>&1; then
+        candidates+=("$(dirname "$(command -v jpackage)")")
+    fi
+    if command -v java > /dev/null 2>&1; then
+        local java_home
+        java_home="$(java -XshowSettings:properties -version 2>&1 \
+            | sed -n 's/^ *java\.home = //p' | tr -d '\r' | head -n 1 || true)"
+        if [ -n "$java_home" ]; then
+            command -v cygpath > /dev/null 2>&1 && java_home="$(cygpath -u "$java_home")"
+            candidates+=("$java_home/bin")
+        fi
+    fi
+    if [ -x /usr/libexec/java_home ]; then
+        local mac_home
+        mac_home="$(/usr/libexec/java_home -v 14+ 2>/dev/null || true)"
+        [ -n "$mac_home" ] && candidates+=("$mac_home/bin")
+    fi
+
+    local dir
+    for dir in ${candidates[@]+"${candidates[@]}"}; do
+        if [ -x "$dir/jpackage" ] || [ -x "$dir/jpackage.exe" ]; then
+            echo "$dir"
+            return
+        fi
+    done
+}
+
+JDK_BIN="$(find_jdk_bin)"
+if [ -z "$JDK_BIN" ]; then
+    echo "Error: 'jpackage' not found. It comes with JDK 14 or newer (17+ recommended)." >&2
+    if command -v java > /dev/null 2>&1; then
+        echo "The Java found on the PATH is:" >&2
+        java -version 2>&1 | head -n 1 | sed 's/^/    /' >&2
+    fi
+    echo "Install a recent JDK, then point JAVA_HOME to it, for example:" >&2
+    echo '    export JAVA_HOME="/c/Program Files/Java/jdk-21"' >&2
+    exit 1
+fi
+JPACKAGE="$JDK_BIN/jpackage"
+if [ -x "$JDK_BIN/jar" ] || [ -x "$JDK_BIN/jar.exe" ]; then
+    JAR_TOOL="$JDK_BIN/jar"
+else
+    JAR_TOOL="jar"
+fi
+echo "Using jpackage: $JPACKAGE"
+# So build.sh uses the same JDK (the PATH may only have java/javac launchers).
+export PATH="$JDK_BIN:$PATH"
 
 # --jlink-options only exists from JDK 16. Older jpackage (14, 15) already
 # strips debug info, header files and man pages by default.
-JPACKAGE_VERSION="$(jpackage --version 2>/dev/null | grep -Eo '^[0-9]+' | head -n 1 || true)"
+JPACKAGE_VERSION="$("$JPACKAGE" --version 2>/dev/null | grep -Eo '^[0-9]+' | head -n 1 || true)"
 JPACKAGE_OPTS=()
 if [ -z "$JPACKAGE_VERSION" ] || [ "$JPACKAGE_VERSION" -ge 16 ]; then
     JPACKAGE_OPTS+=(--jlink-options "--strip-debug --no-header-files --no-man-pages")
@@ -38,7 +89,7 @@ mkdir -p "$INPUT_DIR"
 cp "$JAR" "$INPUT_DIR/"
 
 echo "Creating the application with a bundled Java runtime..."
-jpackage --type app-image \
+"$JPACKAGE" --type app-image \
     --name "$APP_NAME" \
     --input "$INPUT_DIR" \
     --main-jar "$JAR" \
@@ -57,7 +108,7 @@ case "$(uname -s)" in
         ;;
     MINGW*|MSYS*|CYGWIN*)
         ZIP="$DIST_DIR/$APP_NAME-windows.zip"
-        jar --create --no-manifest --file "$ZIP" -C "$DIST_DIR" "$APP_NAME"
+        "$JAR_TOOL" --create --no-manifest --file "$ZIP" -C "$DIST_DIR" "$APP_NAME"
         ;;
     *)
         ZIP="$DIST_DIR/$APP_NAME-linux.tar.gz"
