@@ -63,6 +63,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
     private static final String ETIQUETA_VIDAS = "Vidas";
     private static final String ETIQUETA_MONEDAS = "Monedas";
     private static final String ETIQUETA_SALUD = "Salud";
+    private static final String ETIQUETA_ERROR = "Error";
 
     /** Imagen de las casillas que el jugador todavia no ha visto. */
     private static final String IMAGEN_OSCURIDAD = "dark";
@@ -105,6 +106,9 @@ public abstract class MyFirstUPBGameBase implements GameController {
     private boolean monedasActivas;
 
     private boolean juegoTerminado;
+
+    /** Si es true, la etiqueta de error se esta mostrando. */
+    private boolean errorMostrado;
 
     /** Un evento asociado a una casilla, con sus datos opcionales. */
     private static class EventoEnCasilla {
@@ -439,8 +443,25 @@ public abstract class MyFirstUPBGameBase implements GameController {
     // Flujo del juego
     // ------------------------------------------------------------------
 
-    /** Prepara el mapa, el mundo, el jugador y el estado inicial. */
+    /**
+     * Prepara el juego. Si el mundo tiene un error (por ejemplo una pared en
+     * la casilla inicial), lo muestra en la ventana y el juego no empieza.
+     */
     private void iniciarJuego() {
+        try {
+            prepararJuego();
+        } catch (RuntimeException e) {
+            mostrarError(e);
+            return;
+        }
+        if (errorMostrado) {
+            graficos.setLabel(ETIQUETA_ERROR, " ");
+            errorMostrado = false;
+        }
+    }
+
+    /** Prepara el mapa, el mundo, el jugador y el estado inicial. */
+    private void prepararJuego() {
         // Se reconstruye la cuadricula porque las pantallas finales la reemplazan.
         graficos.configureGrid(FILAS, COLUMNAS, ANCHO_VENTANA, ALTO_VENTANA, false);
 
@@ -448,9 +469,14 @@ public abstract class MyFirstUPBGameBase implements GameController {
         if (mapa == null || mapa.length != FILAS) {
             throw new IllegalStateException("El mapa debe tener " + FILAS + " filas");
         }
-        for (Terreno[] fila : mapa) {
-            if (fila == null || fila.length != COLUMNAS) {
+        for (int v = 0; v < FILAS; v++) {
+            if (mapa[v] == null || mapa[v].length != COLUMNAS) {
                 throw new IllegalStateException("Cada fila del mapa debe tener " + COLUMNAS + " columnas");
+            }
+            for (int h = 0; h < COLUMNAS; h++) {
+                if (mapa[v][h] == null) {
+                    throw new IllegalStateException("La casilla (" + v + "," + h + ") del mapa no tiene terreno");
+                }
             }
         }
         validarBordes();
@@ -478,6 +504,36 @@ public abstract class MyFirstUPBGameBase implements GameController {
         columnaJugador = COLUMNA_INICIAL;
         revelarAlrededor();
         actualizarInterfaz();
+    }
+
+    /**
+     * Muestra un error del mundo en la ventana: un mensaje que hay que cerrar
+     * y una etiqueta que se queda. Si el error viene de una linea de la clase
+     * hija, la indica. El juego queda detenido.
+     */
+    private void mostrarError(RuntimeException e) {
+        e.printStackTrace();
+        juegoTerminado = true;
+
+        String texto;
+        if (e instanceof IllegalArgumentException || e instanceof IllegalStateException) {
+            texto = e.getMessage();
+        } else if (e.getMessage() == null) {
+            texto = e.getClass().getSimpleName();
+        } else {
+            texto = e.getClass().getSimpleName() + ": " + e.getMessage();
+        }
+        for (StackTraceElement linea : e.getStackTrace()) {
+            if (linea.getClassName().equals(getClass().getName()) && linea.getLineNumber() > 0) {
+                texto += ". Revisa la linea " + linea.getLineNumber() + " de " + linea.getFileName();
+                break;
+            }
+        }
+
+        graficos.setLabel(ETIQUETA_ERROR, "Error: " + texto);
+        errorMostrado = true;
+        mensajes.showMessage("Hay un error en tu juego:\n\n" + texto
+                + "\n\nCorrigelo y vuelve a ejecutar el juego.");
     }
 
     /** Vuelve a empezar el juego desde cero. */

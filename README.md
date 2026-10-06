@@ -82,7 +82,7 @@ Keep cells in a teleport chain simple: avoid adding other events to them, becaus
 
 Return `PERSONAJE1`, `PERSONAJE2` or `PERSONAJE3` to pick one of the three adventurers.
 
-The game checks what students write: placing an element on a wall, using a cell outside the grid, leaving a gap in the border wall, or breaking one of the event rules above stops the game with a clear error message in Spanish.
+The game checks what students write: placing an element on a wall, using a cell outside the grid, leaving a gap in the border wall, or breaking one of the event rules above stops the game. As soon as the window opens, it shows a clear error message in Spanish and, when it can, the line of `MyFirstUPBGame.java` to fix. The full error is still printed in the console.
 
 ## Running the game
 
@@ -113,7 +113,6 @@ Things to know before sharing the zip:
 
 - It only runs on the operating system it was built on. Build the macOS version on a Mac.
 - The app isn't signed. On Windows, SmartScreen may block it: click **More info → Run anyway**. On macOS, right-click the app and choose **Open**.
-- The packaged game has no console, so the error messages for an invalid dungeon aren't shown. Package only a dungeon that already runs correctly.
 
 ## Project structure
 
