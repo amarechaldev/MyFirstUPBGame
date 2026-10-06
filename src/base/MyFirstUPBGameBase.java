@@ -142,6 +142,15 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     // ------------------------------------------------------------------
     // Metodos para usar dentro de construirMundo()
+    //
+    // Los eventos de una casilla ocurren todos juntos, asi que en una misma
+    // casilla:
+    // - No se puede repetir un evento (ni con anadirEvento ni con
+    //   anadirEventoUnaVez).
+    // - No se pueden mezclar eventos opuestos (GANAR_VIDA y PERDER_VIDA,
+    //   GANAR_MONEDAS y PERDER_MONEDAS, GANAR_SALUD y PERDER_SALUD).
+    // - GANAR_JUEGO y PERDER_JUEGO deben ser el unico evento de su casilla.
+    // TELETRANSPORTAR ocurre despues de los demas eventos de su casilla.
     // ------------------------------------------------------------------
 
     /**
@@ -285,6 +294,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     private EventoEnCasilla registrarEvento(int v, int h, Evento evento, boolean unaVez) {
         validarCasilla(v, h);
+        validarEventoCompatible(v, h, evento);
         EventoEnCasilla nuevo = new EventoEnCasilla();
         nuevo.v = v;
         nuevo.h = h;
@@ -292,6 +302,58 @@ public abstract class MyFirstUPBGameBase implements GameController {
         nuevo.unaVez = unaVez;
         eventos.add(nuevo);
         return nuevo;
+    }
+
+    /**
+     * Los eventos de una casilla ocurren todos juntos, asi que no pueden
+     * contradecirse: no se repite un mismo evento, no se mezclan eventos
+     * opuestos (GANAR_VIDA y PERDER_VIDA...) y GANAR_JUEGO o PERDER_JUEGO
+     * deben ser el unico evento de su casilla.
+     */
+    private void validarEventoCompatible(int v, int h, Evento evento) {
+        for (EventoEnCasilla e : eventos) {
+            if (e.v != v || e.h != h) {
+                continue;
+            }
+            if (esFinDeJuego(evento) || esFinDeJuego(e.evento)) {
+                Evento fin = esFinDeJuego(evento) ? evento : e.evento;
+                throw new IllegalArgumentException(
+                        "El evento " + fin + " debe ser el unico evento de la casilla (" + v + "," + h + ")");
+            }
+            if (e.evento == evento) {
+                throw new IllegalArgumentException(
+                        "La casilla (" + v + "," + h + ") ya tiene un evento " + evento);
+            }
+            if (e.evento == opuesto(evento)) {
+                throw new IllegalArgumentException(
+                        "Los eventos " + e.evento + " y " + evento + " se contradicen en la casilla ("
+                                + v + "," + h + ")");
+            }
+        }
+    }
+
+    private static boolean esFinDeJuego(Evento evento) {
+        return evento == Evento.GANAR_JUEGO || evento == Evento.PERDER_JUEGO;
+    }
+
+    /** El evento contrario, o null si no tiene. */
+    private static Evento opuesto(Evento evento) {
+        switch (evento) {
+            case GANAR_VIDA:
+                return Evento.PERDER_VIDA;
+            case PERDER_VIDA:
+                return Evento.GANAR_VIDA;
+            case GANAR_MONEDAS:
+                return Evento.PERDER_MONEDAS;
+            case PERDER_MONEDAS:
+                return Evento.GANAR_MONEDAS;
+            case GANAR_SALUD:
+                return Evento.PERDER_SALUD;
+            case PERDER_SALUD:
+                return Evento.GANAR_SALUD;
+            default:
+                return null;
+        }
     }
 
     private void validarCasilla(int v, int h) {
@@ -479,12 +541,13 @@ public abstract class MyFirstUPBGameBase implements GameController {
     // ------------------------------------------------------------------
 
     /**
-     * Ejecuta, en orden, todos los eventos asociados a la casilla (v, h).
-     * Se detiene si el juego termina. Teletransportar no ejecuta los eventos
-     * de la casilla de destino. Los eventos de una sola vez que ya ocurrieron
-     * se saltan.
+     * Ejecuta todos los eventos asociados a la casilla (v, h). Se detiene si
+     * el juego termina. Teletransportar ocurre al final, despues de los demas
+     * eventos de la casilla, y no ejecuta los eventos de la casilla de
+     * destino. Los eventos de una sola vez que ya ocurrieron se saltan.
      */
     private void ejecutarEventos(int v, int h) {
+        EventoEnCasilla teletransporte = null;
         for (EventoEnCasilla e : new ArrayList<>(eventos)) {
             if (juegoTerminado) {
                 return;
@@ -524,14 +587,17 @@ public abstract class MyFirstUPBGameBase implements GameController {
                     mensajes.showMessage(e.texto);
                     break;
                 case TELETRANSPORTAR:
-                    filaJugador = e.vDestino;
-                    columnaJugador = e.hDestino;
-                    revelarAlrededor();
-                    actualizarInterfaz();
+                    teletransporte = e;
                     break;
                 default:
                     break;
             }
+        }
+        if (teletransporte != null && !juegoTerminado) {
+            filaJugador = teletransporte.vDestino;
+            columnaJugador = teletransporte.hDestino;
+            revelarAlrededor();
+            actualizarInterfaz();
         }
     }
 

@@ -68,13 +68,19 @@ There are more than 50 elements to choose from (`DRAGON`, `COFRE`, `FANTASMA`, `
 | `TELETRANSPORTAR` | destination row, column | Move the player to another cell | every time |
 | `GANAR_JUEGO` / `PERDER_JUEGO` | none | Show the victory or defeat screen | either (the game ends) |
 
-A cell can have several events, and they run in the order they were added.
+A cell can have several events. They all happen together when the player enters, so the order you add them in doesn't matter, and a cell's events can't contradict each other:
+
+- A cell can't have the same event twice, whether it was added with `anadirEvento` or `anadirEventoUnaVez`. This includes two messages or two teleports.
+- A cell can't mix opposite events: `GANAR_VIDA` with `PERDER_VIDA`, `GANAR_SALUD` with `PERDER_SALUD`, or `GANAR_MONEDAS` with `PERDER_MONEDAS`.
+- `GANAR_JUEGO` and `PERDER_JUEGO` must be the only event in their cell.
+
+`TELETRANSPORTAR` happens after the cell's other events, and the events at the destination cell don't run.
 
 ### 3. The character: `getPersonaje()`
 
 Return `PERSONAJE1`, `PERSONAJE2` or `PERSONAJE3` to pick one of the three adventurers.
 
-The game checks what students write: placing an element on a wall, using a cell outside the grid, or leaving a gap in the border wall stops the game with a clear error message in Spanish.
+The game checks what students write: placing an element on a wall, using a cell outside the grid, leaving a gap in the border wall, or breaking one of the event rules above stops the game with a clear error message in Spanish.
 
 ## Running the game
 

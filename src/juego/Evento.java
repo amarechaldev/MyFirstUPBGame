@@ -12,6 +12,11 @@ package juego;
  * - Siempre: PERDER_VIDA, PERDER_SALUD, PERDER_MONEDAS (trampas y enemigos)
  *   y TELETRANSPORTAR (portales).
  * - MOSTRAR_MENSAJE: igual que los otros eventos de su casilla.
+ *
+ * Los eventos de una casilla ocurren todos juntos, asi que en una misma
+ * casilla no se puede repetir un evento ni mezclar eventos opuestos
+ * (GANAR_VIDA y PERDER_VIDA...), y GANAR_JUEGO o PERDER_JUEGO deben ser el
+ * unico evento. TELETRANSPORTAR ocurre despues de los demas eventos.
  */
 public enum Evento {
     /** Suma una vida. Activa el sistema de vidas. */
