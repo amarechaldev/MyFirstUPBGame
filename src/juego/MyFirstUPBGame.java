@@ -19,9 +19,9 @@ public class MyFirstUPBGame extends MyFirstUPBGameBase {
             L = Terreno.LAVA, A = Terreno.AGUA;
         return new Terreno[][] {
             { W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W, W },
-            { W, P, P, P, L, L, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
-            { W, A, A, P, L, L, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
-            { W, A, A, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
+            { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
             { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
             { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
             { W, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, P, W },
