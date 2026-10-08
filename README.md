@@ -4,9 +4,34 @@ A small dungeon-exploration game in Java, built as a first programming exercise 
 
 Learning how it works takes about half an hour, and building a complete game takes about an hour.
 
+It has been used since 2026 in the introductory programming course at Universidad Privada Boliviana (UPB), with around 40 students per semester. New features keep coming from students' suggestions (see [Credits](#credits)).
+
 ![A student-built dungeon in progress](docs/screenshots/gameplay.png)
 
-## The game
+## Design choices
+
+The project is built for people writing their first program, and that drives most decisions:
+
+- **Plain `javac`, no Maven or Gradle.** Students compile it on their own machines without installing or configuring anything else.
+- **Java 8 target.** It runs on the university lab machines and on the older JDKs students often have installed.
+- **Spanish identifiers without accents or ñ.** The students are Spanish speakers, and avoiding accented characters prevents encoding problems across machines.
+- **A tiny API.** Students fill in three methods using enums and a few helper methods. Nothing they see or call uses generics, lambdas or other advanced Java.
+- **Mistakes are caught up front.** The engine checks the whole dungeon before the game starts and explains each problem in Spanish, pointing to the line to fix.
+
+## How the engine works
+
+The engine is in [`src/base/MyFirstUPBGameBase.java`](src/base/MyFirstUPBGameBase.java). Students never need to read it.
+
+- **Validation before play.** The map and every element and event are checked before the first move: grid size, gaps in the border wall, the starting cell, elements placed on walls, out-of-range coordinates, and events that contradict each other in the same cell.
+- **Errors point to the student's line.** When validation fails, the engine walks the exception's stack trace to find the frame in the student's class and shows "Revisa la linea N de MyFirstUPBGame.java" in the window. The full stack trace is still printed in the console.
+- **Event resolution.** All events in a cell apply together, so the order they were added in doesn't matter. Teleports run last and can chain. A grid of cells already visited in the current chain stops loops, which is what makes two-way portals work.
+- **Walls that change during play.** The game runs on a copy of the map, so walls can be added or removed by events and **Reiniciar** still restores the original dungeon. A teleport into a cell that has become a wall is skipped.
+- **Fog of war.** Each cell is either visible (next to the player), explored (shown dimmed) or still dark.
+- **No direct Swing.** All drawing, input and messages go through the interfaces of the [UPB-Game-Swing](https://github.com/RobertoCuevasP/UPB-Game-Swing) library, so the engine never touches the windowing code.
+
+## Student guide
+
+### The game
 
 - The dungeon is a grid of **14 rows × 28 columns**. The player always starts at cell `(1,1)`.
 - The player moves one cell at a time with the **arrow keys** or **W A S D**, and can't walk through walls.
@@ -14,11 +39,11 @@ Learning how it works takes about half an hour, and building a complete game tak
 - **Lives, health and coins** are optional. Each one appears on screen only if the dungeon uses an event that needs it.
 - Reaching a win or lose event shows a full-screen victory or defeat image. The **Reiniciar** button restarts the game.
 
-## Building your dungeon
+### Building your dungeon
 
 Everything a student edits is in [`src/juego/MyFirstUPBGame.java`](src/juego/MyFirstUPBGame.java). Coordinates are always `(v, h)`, where `v` is the row (0–13, top to bottom) and `h` is the column (0–27, left to right).
 
-### 1. The map: `crearMapa()`
+#### 1. The map: `crearMapa()`
 
 This method returns a 14 × 28 grid of `Terreno` values:
 
@@ -31,7 +56,7 @@ This method returns a 14 × 28 grid of `Terreno` values:
 
 Border cells must be `PARED`, and the starting cell `(1,1)` can't be a wall.
 
-### 2. The world: `construirMundo()`
+#### 2. The world: `construirMundo()`
 
 Place objects on cells with `anadirElemento`, and attach events that run when the player steps onto a cell with `anadirEvento`:
 
@@ -97,7 +122,7 @@ A cell can have several events. They all happen together when the player enters,
 
 Keep cells in a teleport chain simple: avoid adding other events to them, because they'll run every time the player passes through.
 
-### 3. The character: `getPersonaje()`
+#### 3. The character: `getPersonaje()`
 
 Return `PERSONAJE1`, `PERSONAJE2` or `PERSONAJE3` to pick one of the three adventurers.
 
@@ -112,12 +137,12 @@ You need **Java 8 or later**. The entry point is `base.LaunchMyFirstUPBGame`.
 **From the command line**, at the project root:
 
 ```bash
+javac -encoding UTF-8 -cp lib/upb-game.jar -d bin src/base/*.java src/juego/*.java
+
 # Windows
-javac -cp lib/upb-game.jar -d bin src/base/*.java src/juego/*.java
 java -cp "bin;lib/upb-game.jar" base.LaunchMyFirstUPBGame
 
 # macOS / Linux
-javac -cp lib/upb-game.jar -d bin src/base/*.java src/juego/*.java
 java -cp "bin:lib/upb-game.jar" base.LaunchMyFirstUPBGame
 ```
 
@@ -135,7 +160,7 @@ Things to know before sharing the zip:
 
 ## Project structure
 
-```
+```text
 src/
   juego/   ← student code: MyFirstUPBGame.java plus the Terreno, Elemento, Evento and Personaje enums
   base/    ← game engine (MyFirstUPBGameBase) and launcher; students don't need to touch it
@@ -146,6 +171,11 @@ resources/images/ ← sprites for terrain, elements, characters and the win/lose
 ## Credits
 
 The graphics, input and windowing come from the [UPB-Game-Swing](https://github.com/RobertoCuevasP/UPB-Game-Swing) library by Roberto Cuevas and Alexis Marechal, included here as `lib/upb-game.jar`.
+
+Features suggested by students:
+
+- Winning only with enough coins (`GANAR_JUEGO_CON_MONEDAS`): Viviana Dávalos.
+- Walls that change during the game (`PONER_PARED` / `QUITAR_PARED`): Matsue Argani.
 
 ## License
 
