@@ -17,7 +17,8 @@ package juego;
  * casilla no se puede repetir un evento ni mezclar eventos opuestos
  * (GANAR_VIDA y PERDER_VIDA...), y GANAR_JUEGO, GANAR_JUEGO_CON_MONEDAS o
  * PERDER_JUEGO deben ser el unico evento. TELETRANSPORTAR ocurre despues de los demas eventos, y luego
- * ocurren los eventos de la casilla de destino.
+ * ocurren los eventos de la casilla de destino. PONER_PARED y QUITAR_PARED
+ * si se pueden repetir en una casilla, cada uno con otro destino.
  */
 public enum Evento {
     /** Suma una vida. Activa el sistema de vidas. */
@@ -51,5 +52,15 @@ public enum Evento {
      * Lleva al jugador a otra casilla. Necesita la casilla de destino. Los
      * eventos del destino tambien ocurren.
      */
-    TELETRANSPORTAR
+    TELETRANSPORTAR,
+    /**
+     * Pone una pared en otra casilla. Necesita la casilla de destino, que no
+     * puede ser del borde ni tener un elemento.
+     */
+    PONER_PARED,
+    /**
+     * Quita la pared de otra casilla, que vuelve a su terreno inicial (o PISO
+     * si era PARED). Necesita la casilla de destino, que no puede ser del borde.
+     */
+    QUITAR_PARED
 }

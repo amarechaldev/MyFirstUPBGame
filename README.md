@@ -64,6 +64,16 @@ anadirElemento(12, 25, Elemento.PUERTA);
 anadirEvento(12, 25, Evento.GANAR_JUEGO_CON_MONEDAS, 30);
 ```
 
+Walls can change during the game with `PONER_PARED` (put a wall) and `QUITAR_PARED` (remove a wall). They take the cell to change, like a teleport destination. A removed wall turns back into the cell's terrain from `crearMapa()`, or `PISO` if it was a wall there. For example, a lever that opens one passage and closes another:
+
+```java
+anadirElemento(3, 12, Elemento.PALANCA);
+anadirEventoUnaVez(3, 12, Evento.QUITAR_PARED, 5, 12);
+anadirEventoUnaVez(3, 12, Evento.PONER_PARED, 5, 14);
+```
+
+The border walls can never change, a cell can't change its own wall, and a wall can't be put on a cell with an element. These are checked when the event is added, before the game starts.
+
 There are more than 50 elements to choose from (`DRAGON`, `COFRE`, `FANTASMA`, `POCION_ROJA`, `PATO_DE_GOMA`, …). See [`Elemento.java`](src/juego/Elemento.java) for the full list.
 
 | Event | Extra data | Effect | Usually |
@@ -73,16 +83,17 @@ There are more than 50 elements to choose from (`DRAGON`, `COFRE`, `FANTASMA`, `
 | `GANAR_MONEDAS` / `PERDER_MONEDAS` | amount | Gain or lose coins | gain: once · lose: every time |
 | `MOSTRAR_MENSAJE` | text | Show a message | same as the other events in its cell |
 | `TELETRANSPORTAR` | destination row, column | Move the player to another cell | every time |
+| `PONER_PARED` / `QUITAR_PARED` | row, column of the wall | Put or remove a wall in another cell (not on the border) | once |
 | `GANAR_JUEGO` / `PERDER_JUEGO` | none | Show the victory or defeat screen | either (the game ends) |
 | `GANAR_JUEGO_CON_MONEDAS` | amount | Win only if the player has at least that many coins (they aren't spent); otherwise show how many are needed and keep playing | every time |
 
 A cell can have several events. They all happen together when the player enters, so the order you add them in doesn't matter, and a cell's events can't contradict each other:
 
-- A cell can't have the same event twice, whether it was added with `anadirEvento` or `anadirEventoUnaVez`. This includes two messages or two teleports.
+- A cell can't have the same event twice, whether it was added with `anadirEvento` or `anadirEventoUnaVez`. This includes two messages or two teleports. The exception is `PONER_PARED` and `QUITAR_PARED`: a cell can change several walls, but not the same wall twice, and it can't both put and remove the same wall.
 - A cell can't mix opposite events: `GANAR_VIDA` with `PERDER_VIDA`, `GANAR_SALUD` with `PERDER_SALUD`, or `GANAR_MONEDAS` with `PERDER_MONEDAS`.
 - `GANAR_JUEGO`, `GANAR_JUEGO_CON_MONEDAS` and `PERDER_JUEGO` must be the only event in their cell.
 
-`TELETRANSPORTAR` happens after the cell's other events. Then the player enters the destination cell as if they had walked in: its events run too (and a one-time element there disappears), so teleports can chain. A teleport whose destination was already visited in the same chain doesn't happen, and the player stays where they are. This is what makes two-way portals work: from A you land on B, and B's teleport back to A is skipped. A one-time teleport that gets skipped this way isn't used up.
+`TELETRANSPORTAR` happens after the cell's other events. Then the player enters the destination cell as if they had walked in: its events run too (and a one-time element there disappears), so teleports can chain. A teleport whose destination was already visited in the same chain doesn't happen, and the player stays where they are. This is what makes two-way portals work: from A you land on B, and B's teleport back to A is skipped. A teleport whose destination has been turned into a wall by `PONER_PARED` doesn't happen either. A one-time teleport that gets skipped this way isn't used up.
 
 Keep cells in a teleport chain simple: avoid adding other events to them, because they'll run every time the player passes through.
 

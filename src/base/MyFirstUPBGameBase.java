@@ -86,6 +86,9 @@ public abstract class MyFirstUPBGameBase implements GameController {
     // Estado del juego
     // ------------------------------------------------------------------
 
+    /** El mapa tal como lo devolvio crearMapa(). No cambia durante el juego. */
+    private Terreno[][] mapaInicial;
+    /** El mapa durante el juego: una copia de mapaInicial que PONER_PARED y QUITAR_PARED cambian. */
     private Terreno[][] mapa;
     private Elemento[][] elementos;
     /** Casillas cuyo elemento desaparece cuando el jugador entra en ellas. */
@@ -155,10 +158,12 @@ public abstract class MyFirstUPBGameBase implements GameController {
     //   GANAR_MONEDAS y PERDER_MONEDAS, GANAR_SALUD y PERDER_SALUD).
     // - GANAR_JUEGO, GANAR_JUEGO_CON_MONEDAS y PERDER_JUEGO deben ser el unico
     //   evento de su casilla.
+    // - PONER_PARED y QUITAR_PARED si se pueden repetir, pero cada uno con
+    //   otra casilla de destino.
     // TELETRANSPORTAR ocurre despues de los demas eventos de su casilla. Al
     // llegar al destino se ejecutan sus eventos (los teletransportes se
     // encadenan), salvo un teletransporte a una casilla ya visitada en la
-    // cadena.
+    // cadena o que ahora es PARED.
     // ------------------------------------------------------------------
 
     /**
@@ -232,20 +237,23 @@ public abstract class MyFirstUPBGameBase implements GameController {
     }
 
     /**
-     * Asocia un evento TELETRANSPORTAR a la casilla (v, h), que ocurre cada
-     * vez que el jugador entra. El destino (vDestino, hDestino) no puede ser PARED.
+     * Asocia un evento con una casilla de destino a la casilla (v, h), que
+     * ocurre cada vez que el jugador entra:
+     * - TELETRANSPORTAR: lleva al jugador al destino, que no puede ser PARED.
+     * - PONER_PARED o QUITAR_PARED: pone o quita una pared en el destino, que
+     *   no puede ser una casilla del borde ni la misma casilla (v, h).
      */
     protected void anadirEvento(int v, int h, Evento evento, int vDestino, int hDestino) {
-        crearTeletransporte(v, h, evento, vDestino, hDestino, false);
+        crearEventoConDestino(v, h, evento, vDestino, hDestino, false);
     }
 
     /**
-     * Asocia un evento TELETRANSPORTAR a la casilla (v, h), que solo ocurre
-     * la primera vez que el jugador entra. El destino (vDestino, hDestino) no
-     * puede ser PARED.
+     * Asocia un evento con una casilla de destino a la casilla (v, h), que
+     * solo ocurre la primera vez que el jugador entra: TELETRANSPORTAR,
+     * PONER_PARED o QUITAR_PARED (ver anadirEvento).
      */
     protected void anadirEventoUnaVez(int v, int h, Evento evento, int vDestino, int hDestino) {
-        crearTeletransporte(v, h, evento, vDestino, hDestino, true);
+        crearEventoConDestino(v, h, evento, vDestino, hDestino, true);
     }
 
     private void crearElemento(int v, int h, Elemento elemento, boolean desaparece) {
@@ -253,6 +261,12 @@ public abstract class MyFirstUPBGameBase implements GameController {
         if (mapa[v][h] == Terreno.PARED) {
             throw new IllegalArgumentException(
                     "No se puede colocar " + elemento + " en (" + v + "," + h + "): la casilla es PARED");
+        }
+        for (EventoEnCasilla e : eventos) {
+            if (e.evento == Evento.PONER_PARED && e.vDestino == v && e.hDestino == h) {
+                throw new IllegalArgumentException("No se puede colocar " + elemento + " en (" + v + "," + h
+                        + "): el evento PONER_PARED de (" + e.v + "," + e.h + ") pone una pared ahi");
+            }
         }
         elementos[v][h] = elemento;
         desapareceAlEntrar[v][h] = desaparece;
@@ -292,14 +306,58 @@ public abstract class MyFirstUPBGameBase implements GameController {
         registrarEvento(v, h, evento, unaVez).texto = texto;
     }
 
-    private void crearTeletransporte(int v, int h, Evento evento, int vDestino, int hDestino, boolean unaVez) {
-        if (evento != Evento.TELETRANSPORTAR) {
+    private void crearEventoConDestino(int v, int h, Evento evento, int vDestino, int hDestino, boolean unaVez) {
+        if (evento == Evento.TELETRANSPORTAR) {
+            crearTeletransporte(v, h, evento, vDestino, hDestino, unaVez);
+        } else if (evento == Evento.PONER_PARED || evento == Evento.QUITAR_PARED) {
+            crearCambioDePared(v, h, evento, vDestino, hDestino, unaVez);
+        } else {
             throw new IllegalArgumentException("El evento " + evento + " no usa una casilla de destino");
         }
+    }
+
+    private void crearTeletransporte(int v, int h, Evento evento, int vDestino, int hDestino, boolean unaVez) {
         validarCasilla(vDestino, hDestino);
         if (mapa[vDestino][hDestino] == Terreno.PARED) {
             throw new IllegalArgumentException(
                     "El destino (" + vDestino + "," + hDestino + ") no puede ser PARED");
+        }
+        EventoEnCasilla nuevo = registrarEvento(v, h, evento, unaVez);
+        nuevo.vDestino = vDestino;
+        nuevo.hDestino = hDestino;
+    }
+
+    /**
+     * PONER_PARED o QUITAR_PARED. Las paredes del borde nunca cambian, una
+     * casilla no puede cambiar su propia pared (el jugador quedaria dentro de
+     * la pared) y no se puede poner una pared sobre un elemento. Una casilla
+     * puede cambiar varias paredes, pero no la misma dos veces.
+     */
+    private void crearCambioDePared(int v, int h, Evento evento, int vDestino, int hDestino, boolean unaVez) {
+        validarCasilla(vDestino, hDestino);
+        if (esBorde(vDestino, hDestino)) {
+            throw new IllegalArgumentException("El evento " + evento + " no puede cambiar la casilla ("
+                    + vDestino + "," + hDestino + "): las paredes del borde no se pueden cambiar");
+        }
+        if (v == vDestino && h == hDestino) {
+            throw new IllegalArgumentException("El evento " + evento + " de la casilla (" + v + "," + h
+                    + ") no puede cambiar su propia casilla");
+        }
+        if (evento == Evento.PONER_PARED && elementos[vDestino][hDestino] != null) {
+            throw new IllegalArgumentException("No se puede poner una pared en (" + vDestino + "," + hDestino
+                    + "): ahi hay un " + elementos[vDestino][hDestino]);
+        }
+        for (EventoEnCasilla e : eventos) {
+            boolean cambiaPared = e.evento == Evento.PONER_PARED || e.evento == Evento.QUITAR_PARED;
+            if (e.v != v || e.h != h || !cambiaPared || e.vDestino != vDestino || e.hDestino != hDestino) {
+                continue;
+            }
+            if (e.evento == evento) {
+                throw new IllegalArgumentException("La casilla (" + v + "," + h + ") ya tiene un evento "
+                        + evento + " para (" + vDestino + "," + hDestino + ")");
+            }
+            throw new IllegalArgumentException("Los eventos " + e.evento + " y " + evento
+                    + " se contradicen en la casilla (" + v + "," + h + ") para (" + vDestino + "," + hDestino + ")");
         }
         EventoEnCasilla nuevo = registrarEvento(v, h, evento, unaVez);
         nuevo.vDestino = vDestino;
@@ -323,7 +381,8 @@ public abstract class MyFirstUPBGameBase implements GameController {
      * contradecirse: no se repite un mismo evento, no se mezclan eventos
      * opuestos (GANAR_VIDA y PERDER_VIDA...) y GANAR_JUEGO,
      * GANAR_JUEGO_CON_MONEDAS o PERDER_JUEGO deben ser el unico evento de su
-     * casilla.
+     * casilla. PONER_PARED y QUITAR_PARED se pueden repetir: sus destinos se
+     * revisan en crearCambioDePared().
      */
     private void validarEventoCompatible(int v, int h, Evento evento) {
         for (EventoEnCasilla e : eventos) {
@@ -335,7 +394,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
                 throw new IllegalArgumentException(
                         "El evento " + fin + " debe ser el unico evento de la casilla (" + v + "," + h + ")");
             }
-            if (e.evento == evento) {
+            if (e.evento == evento && evento != Evento.PONER_PARED && evento != Evento.QUITAR_PARED) {
                 throw new IllegalArgumentException(
                         "La casilla (" + v + "," + h + ") ya tiene un evento " + evento);
             }
@@ -378,12 +437,15 @@ public abstract class MyFirstUPBGameBase implements GameController {
         }
     }
 
+    private static boolean esBorde(int v, int h) {
+        return v == 0 || v == FILAS - 1 || h == 0 || h == COLUMNAS - 1;
+    }
+
     /** Las casillas del borde del mapa deben ser PARED. */
     private void validarBordes() {
         for (int v = 0; v < FILAS; v++) {
             for (int h = 0; h < COLUMNAS; h++) {
-                boolean esBorde = v == 0 || v == FILAS - 1 || h == 0 || h == COLUMNAS - 1;
-                if (esBorde && mapa[v][h] != Terreno.PARED) {
+                if (esBorde(v, h) && mapa[v][h] != Terreno.PARED) {
                     throw new IllegalStateException(
                             "La casilla (" + v + "," + h + ") del borde del calabozo debe ser PARED");
                 }
@@ -494,6 +556,16 @@ public abstract class MyFirstUPBGameBase implements GameController {
                     "La casilla inicial (" + FILA_INICIAL + "," + COLUMNA_INICIAL + ") no puede ser PARED");
         }
 
+        // Se juega sobre una copia, para que los cambios de paredes no
+        // modifiquen el mapa inicial y Reiniciar lo recupere.
+        mapaInicial = mapa;
+        mapa = new Terreno[FILAS][COLUMNAS];
+        for (int v = 0; v < FILAS; v++) {
+            for (int h = 0; h < COLUMNAS; h++) {
+                mapa[v][h] = mapaInicial[v][h];
+            }
+        }
+
         elementos = new Elemento[FILAS][COLUMNAS];
         desapareceAlEntrar = new boolean[FILAS][COLUMNAS];
         eventos = new ArrayList<>();
@@ -597,6 +669,7 @@ public abstract class MyFirstUPBGameBase implements GameController {
      * misma forma, asi que los teletransportes se pueden encadenar. Un
      * teletransporte no ocurre si su destino ya se visito en esta cadena: asi
      * los portales de ida y vuelta funcionan y la cadena siempre termina.
+     * Tampoco ocurre si un PONER_PARED convirtio su destino en PARED.
      */
     private void entrarEnCasilla() {
         boolean[][] visitadas = new boolean[FILAS][COLUMNAS];
@@ -610,7 +683,8 @@ public abstract class MyFirstUPBGameBase implements GameController {
             actualizarInterfaz();
             EventoEnCasilla teletransporte = ejecutarEventos(filaJugador, columnaJugador);
             if (teletransporte == null || juegoTerminado
-                    || visitadas[teletransporte.vDestino][teletransporte.hDestino]) {
+                    || visitadas[teletransporte.vDestino][teletransporte.hDestino]
+                    || mapa[teletransporte.vDestino][teletransporte.hDestino] == Terreno.PARED) {
                 return;
             }
             if (teletransporte.unaVez) {
@@ -680,6 +754,12 @@ public abstract class MyFirstUPBGameBase implements GameController {
                 case TELETRANSPORTAR:
                     teletransporte = e;
                     break;
+                case PONER_PARED:
+                    cambiarTerreno(e.vDestino, e.hDestino, Terreno.PARED);
+                    break;
+                case QUITAR_PARED:
+                    quitarPared(e.vDestino, e.hDestino);
+                    break;
                 default:
                     break;
             }
@@ -744,6 +824,23 @@ public abstract class MyFirstUPBGameBase implements GameController {
         } else {
             mensajes.showMessage("Necesitas " + e.cantidad + " monedas para ganar. Tienes " + monedas + ".");
         }
+    }
+
+    /**
+     * La casilla recupera su terreno inicial, o PISO si al empezar era PARED.
+     * Si no es PARED, no cambia.
+     */
+    private void quitarPared(int v, int h) {
+        if (mapa[v][h] != Terreno.PARED) {
+            return;
+        }
+        Terreno inicial = mapaInicial[v][h];
+        cambiarTerreno(v, h, inicial == Terreno.PARED ? Terreno.PISO : inicial);
+    }
+
+    private void cambiarTerreno(int v, int h, Terreno terreno) {
+        mapa[v][h] = terreno;
+        dibujarCasilla(v, h);
     }
 
     // ------------------------------------------------------------------
