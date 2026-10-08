@@ -67,6 +67,10 @@ public class MyFirstUPBGame extends MyFirstUPBGameBase {
         //
         // anadirElemento(12, 25, Elemento.PUERTA);
         // anadirEvento(12, 25, Evento.GANAR_JUEGO);
+        //
+        // Una salida que solo deja ganar con al menos 20 monedas:
+        // anadirElemento(12, 20, Elemento.PUERTA);
+        // anadirEvento(12, 20, Evento.GANAR_JUEGO_CON_MONEDAS, 20);
     }
 
     @Override

@@ -57,6 +57,13 @@ anadirEvento(4, 6, Evento.PERDER_SALUD, 10); // the chest is cursed: it hurts on
 
 Pressing **Reiniciar** brings back every one-time event and element.
 
+To make the exit require coins, use `GANAR_JUEGO_CON_MONEDAS` with the number of coins needed. If the player doesn't have enough, the game tells them how many they need and they can keep exploring:
+
+```java
+anadirElemento(12, 25, Elemento.PUERTA);
+anadirEvento(12, 25, Evento.GANAR_JUEGO_CON_MONEDAS, 30);
+```
+
 There are more than 50 elements to choose from (`DRAGON`, `COFRE`, `FANTASMA`, `POCION_ROJA`, `PATO_DE_GOMA`, …). See [`Elemento.java`](src/juego/Elemento.java) for the full list.
 
 | Event | Extra data | Effect | Usually |
@@ -67,12 +74,13 @@ There are more than 50 elements to choose from (`DRAGON`, `COFRE`, `FANTASMA`, `
 | `MOSTRAR_MENSAJE` | text | Show a message | same as the other events in its cell |
 | `TELETRANSPORTAR` | destination row, column | Move the player to another cell | every time |
 | `GANAR_JUEGO` / `PERDER_JUEGO` | none | Show the victory or defeat screen | either (the game ends) |
+| `GANAR_JUEGO_CON_MONEDAS` | amount | Win only if the player has at least that many coins (they aren't spent); otherwise show how many are needed and keep playing | every time |
 
 A cell can have several events. They all happen together when the player enters, so the order you add them in doesn't matter, and a cell's events can't contradict each other:
 
 - A cell can't have the same event twice, whether it was added with `anadirEvento` or `anadirEventoUnaVez`. This includes two messages or two teleports.
 - A cell can't mix opposite events: `GANAR_VIDA` with `PERDER_VIDA`, `GANAR_SALUD` with `PERDER_SALUD`, or `GANAR_MONEDAS` with `PERDER_MONEDAS`.
-- `GANAR_JUEGO` and `PERDER_JUEGO` must be the only event in their cell.
+- `GANAR_JUEGO`, `GANAR_JUEGO_CON_MONEDAS` and `PERDER_JUEGO` must be the only event in their cell.
 
 `TELETRANSPORTAR` happens after the cell's other events. Then the player enters the destination cell as if they had walked in: its events run too (and a one-time element there disappears), so teleports can chain. A teleport whose destination was already visited in the same chain doesn't happen, and the player stays where they are. This is what makes two-way portals work: from A you land on B, and B's teleport back to A is skipped. A one-time teleport that gets skipped this way isn't used up.
 

@@ -153,7 +153,8 @@ public abstract class MyFirstUPBGameBase implements GameController {
     //   anadirEventoUnaVez).
     // - No se pueden mezclar eventos opuestos (GANAR_VIDA y PERDER_VIDA,
     //   GANAR_MONEDAS y PERDER_MONEDAS, GANAR_SALUD y PERDER_SALUD).
-    // - GANAR_JUEGO y PERDER_JUEGO deben ser el unico evento de su casilla.
+    // - GANAR_JUEGO, GANAR_JUEGO_CON_MONEDAS y PERDER_JUEGO deben ser el unico
+    //   evento de su casilla.
     // TELETRANSPORTAR ocurre despues de los demas eventos de su casilla. Al
     // llegar al destino se ejecutan sus eventos (los teletransportes se
     // encadenan), salvo un teletransporte a una casilla ya visitada en la
@@ -197,8 +198,8 @@ public abstract class MyFirstUPBGameBase implements GameController {
 
     /**
      * Asocia un evento con una cantidad a la casilla (v, h), que ocurre cada
-     * vez que el jugador entra: GANAR_MONEDAS, PERDER_MONEDAS, GANAR_SALUD o
-     * PERDER_SALUD.
+     * vez que el jugador entra: GANAR_MONEDAS, PERDER_MONEDAS, GANAR_SALUD,
+     * PERDER_SALUD o GANAR_JUEGO_CON_MONEDAS (las monedas necesarias para ganar).
      */
     protected void anadirEvento(int v, int h, Evento evento, int cantidad) {
         crearEventoConCantidad(v, h, evento, cantidad, false);
@@ -207,7 +208,8 @@ public abstract class MyFirstUPBGameBase implements GameController {
     /**
      * Asocia un evento con una cantidad a la casilla (v, h), que solo ocurre
      * la primera vez que el jugador entra: GANAR_MONEDAS, PERDER_MONEDAS,
-     * GANAR_SALUD o PERDER_SALUD.
+     * GANAR_SALUD, PERDER_SALUD o GANAR_JUEGO_CON_MONEDAS. Si el jugador no
+     * tiene suficientes monedas, GANAR_JUEGO_CON_MONEDAS no se gasta.
      */
     protected void anadirEventoUnaVez(int v, int h, Evento evento, int cantidad) {
         crearEventoConCantidad(v, h, evento, cantidad, true);
@@ -266,10 +268,15 @@ public abstract class MyFirstUPBGameBase implements GameController {
     }
 
     private void crearEventoConCantidad(int v, int h, Evento evento, int cantidad, boolean unaVez) {
-        boolean esMonedas = evento == Evento.GANAR_MONEDAS || evento == Evento.PERDER_MONEDAS;
+        boolean esMonedas = evento == Evento.GANAR_MONEDAS || evento == Evento.PERDER_MONEDAS
+                || evento == Evento.GANAR_JUEGO_CON_MONEDAS;
         boolean esSalud = evento == Evento.GANAR_SALUD || evento == Evento.PERDER_SALUD;
         if (!esMonedas && !esSalud) {
             throw new IllegalArgumentException("El evento " + evento + " no usa una cantidad");
+        }
+        if (evento == Evento.GANAR_JUEGO_CON_MONEDAS && cantidad <= 0) {
+            throw new IllegalArgumentException(
+                    "El evento " + evento + " necesita una cantidad mayor que 0");
         }
         registrarEvento(v, h, evento, unaVez).cantidad = cantidad;
         monedasActivas = monedasActivas || esMonedas;
@@ -314,8 +321,9 @@ public abstract class MyFirstUPBGameBase implements GameController {
     /**
      * Los eventos de una casilla ocurren todos juntos, asi que no pueden
      * contradecirse: no se repite un mismo evento, no se mezclan eventos
-     * opuestos (GANAR_VIDA y PERDER_VIDA...) y GANAR_JUEGO o PERDER_JUEGO
-     * deben ser el unico evento de su casilla.
+     * opuestos (GANAR_VIDA y PERDER_VIDA...) y GANAR_JUEGO,
+     * GANAR_JUEGO_CON_MONEDAS o PERDER_JUEGO deben ser el unico evento de su
+     * casilla.
      */
     private void validarEventoCompatible(int v, int h, Evento evento) {
         for (EventoEnCasilla e : eventos) {
@@ -340,7 +348,8 @@ public abstract class MyFirstUPBGameBase implements GameController {
     }
 
     private static boolean esFinDeJuego(Evento evento) {
-        return evento == Evento.GANAR_JUEGO || evento == Evento.PERDER_JUEGO;
+        return evento == Evento.GANAR_JUEGO || evento == Evento.GANAR_JUEGO_CON_MONEDAS
+                || evento == Evento.PERDER_JUEGO;
     }
 
     /** El evento contrario, o null si no tiene. */
@@ -621,7 +630,8 @@ public abstract class MyFirstUPBGameBase implements GameController {
      * teletransporte: lo devuelve (o null si no hay) para que
      * entrarEnCasilla() lo haga despues de los demas eventos. Se detiene si
      * el juego termina. Los eventos de una sola vez que ya ocurrieron se
-     * saltan; un teletransporte de una sola vez solo se gasta si ocurre.
+     * saltan; un teletransporte o un GANAR_JUEGO_CON_MONEDAS de una sola vez
+     * solo se gasta si ocurre.
      */
     private EventoEnCasilla ejecutarEventos(int v, int h) {
         EventoEnCasilla teletransporte = null;
@@ -632,7 +642,8 @@ public abstract class MyFirstUPBGameBase implements GameController {
             if (e.v != v || e.h != h || e.usado) {
                 continue;
             }
-            if (e.unaVez && e.evento != Evento.TELETRANSPORTAR) {
+            if (e.unaVez && e.evento != Evento.TELETRANSPORTAR
+                    && e.evento != Evento.GANAR_JUEGO_CON_MONEDAS) {
                 e.usado = true;
             }
             switch (e.evento) {
@@ -656,6 +667,9 @@ public abstract class MyFirstUPBGameBase implements GameController {
                     break;
                 case GANAR_JUEGO:
                     mostrarPantallaVictoria();
+                    break;
+                case GANAR_JUEGO_CON_MONEDAS:
+                    ganarJuegoConMonedas(e);
                     break;
                 case PERDER_JUEGO:
                     mostrarPantallaDerrota();
@@ -715,6 +729,21 @@ public abstract class MyFirstUPBGameBase implements GameController {
     private void perderMonedas(int cantidad) {
         monedas = Math.max(0, monedas - cantidad);
         actualizarEtiquetas();
+    }
+
+    /**
+     * Gana el juego si el jugador tiene suficientes monedas (no se gastan);
+     * si no, le dice cuantas necesita y el juego sigue.
+     */
+    private void ganarJuegoConMonedas(EventoEnCasilla e) {
+        if (monedas >= e.cantidad) {
+            if (e.unaVez) {
+                e.usado = true;
+            }
+            mostrarPantallaVictoria();
+        } else {
+            mensajes.showMessage("Necesitas " + e.cantidad + " monedas para ganar. Tienes " + monedas + ".");
+        }
     }
 
     // ------------------------------------------------------------------
